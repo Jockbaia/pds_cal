@@ -26,6 +26,20 @@ pds_cal::~pds_cal()
 
 void pds_cal::on_getButton_clicked()
 {
-    mManager->get(QNetworkRequest(QUrl(ui->urlLineEdit->text())));
+    // mManager->get(QNetworkRequest(QUrl(ui->urlLineEdit->text())));
+
+    //authentication
+
+    QString username = ui->username_login->text();
+    QString pass = ui->password_login->text();
+
+    QString concatenated = username + ":" + pass; //username:password
+    QByteArray data = concatenated.toLocal8Bit().toBase64();
+    QString headerData = "Basic " + data;
+    QNetworkRequest request=QNetworkRequest(QUrl(ui->urlLineEdit->text()));
+
+    request.setRawHeader("Authorization", headerData.toLocal8Bit());
+
+    mManager->get(request);
 }
 
