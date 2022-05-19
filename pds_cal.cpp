@@ -33,19 +33,18 @@ void MainWindow::on_getButton_clicked()
 {
     // mManager->get(QNetworkRequest(QUrl(ui->urlLineEdit->text())));
 
-    //authentication
+    // AUTHENTICATION
 
     QString username = ui->username_login->text();
     QString pass = ui->password_login->text();
 
-    QString concatenated = username + ":" + pass; //username:password
+    QString concatenated = username + ":" + pass; // username:password
     QByteArray data = concatenated.toLocal8Bit().toBase64();
-    /*QString headerData = "Basic " + data;
+
+    /* QString headerData = "Basic " + data;
     QNetworkRequest request=QNetworkRequest(QUrl(ui->urlLineEdit->text()));
-
     request.setRawHeader("Authorization", headerData.toLocal8Bit());
-
-    mManager->get(request);*/
+    mManager->get(request); */
 
     qDebug() << "saving event: TEST";
 
@@ -110,9 +109,9 @@ void MainWindow::on_getButton_clicked()
     // contentlength.append(QString::number(buffersize));
 
     QNetworkRequest request;
-    //Per l'url, la stringa dovrebbe essere host name + filename, con host name definito come attributo di classe
+    // Per l'url, la stringa dovrebbe essere host name + filename, con host name definito come attributo di classe
     // Potrei aver scazzato l'host name, non ne sono sicura
-    request.setUrl(QUrl("https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/" + filename));
+    request.setUrl(QUrl("https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/test/" + filename));
     request.setRawHeader("User-Agent", "CalendarClient_CalDAV"); // ?
     request.setRawHeader("Authorization", authorization.toUtf8());
     request.setRawHeader("Depth", "0");
@@ -147,4 +146,16 @@ void MainWindow::on_getButton_clicked()
       // emit error("Invalid reply pointer when requesting URL.");
     }
 }
+
+void handleUploadHTTPError(void)
+{
+      qDebug() << "";
+}
+
+void handleUploadFinished(void)
+{
+      qDebug() << "";
+}
+
+
 
