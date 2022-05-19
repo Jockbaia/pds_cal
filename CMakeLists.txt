@@ -14,6 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Network)
+find_package(Qt6 REQUIRED COMPONENTS Core)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -47,6 +48,7 @@ endif()
 
 target_link_libraries(pds_cal PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(pds_cal PRIVATE Qt6::Network)
+target_link_libraries(pds_cal PRIVATE Qt6::Core)
 
 set_target_properties(pds_cal PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
