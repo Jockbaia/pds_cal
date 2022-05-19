@@ -10,13 +10,13 @@ QT_END_NAMESPACE
 
 class QNetworkAccessManager;
 
-class pds_cal : public QMainWindow
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    pds_cal(QWidget *parent = nullptr);
-    ~pds_cal();
+    MainWindow(QWidget *parent = nullptr);
+    ~MainWindow();
 
 private slots:
     void on_getButton_clicked();
