@@ -9,7 +9,6 @@
 #include <QDateTime>
 #include <QTimer>
 
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::pds_cal)
@@ -37,30 +36,31 @@ void MainWindow::on_getButton_clicked()
 
     QString username = ui->username_login->text();
     QString pass = ui->password_login->text();
-
     QString concatenated = username + ":" + pass; // username:password
+    QString authorization = "Basic ";
     QByteArray data = concatenated.toLocal8Bit().toBase64();
+    authorization.append(data);
+
+    qDebug() << "[AUTH]";
+    qDebug() << "name: " + username;
+    qDebug() << "password: " + pass;
+    qDebug() << "digest: " + data;
+
+    // !AUTHENTICATION
 
     /* QString headerData = "Basic " + data;
     QNetworkRequest request=QNetworkRequest(QUrl(ui->urlLineEdit->text()));
     request.setRawHeader("Authorization", headerData.toLocal8Bit());
     mManager->get(request); */
 
-    qDebug() << "saving event: TEST";
-
-    QString authorization = "Basic ";
-    authorization.append(data);
-
     QBuffer* buffer = new QBuffer();
-
     buffer->open(QIODevice::ReadWrite);
+    qDebug() << "[NEW_EVENT]";
 
-    // startDateTime creato manualmente ma veniva passato come parametro
     QDate start_date(2022, 05, 21);
     QTime start_time(14, 30);
-    QDateTime startDateTime(start_date, start_time);    //Local Time, non ho trovato un modo facile per scegliere il fuso orario
+    QDateTime startDateTime(start_date, start_time);    // Local Time, non ho trovato un modo facile per scegliere il fuso orario
     QString uid = QDateTime::currentDateTime().toString("yyyyMMdd-HHMM-00ss") + "-0000-" + startDateTime.toString("yyyyMMddHHMM");
-
     QString filename = uid + ".ics";    // portato fuori dall'if commmentato
 
     // Questo credo andrà reinserito dopo
@@ -69,7 +69,6 @@ void MainWindow::on_getButton_clicked()
       filename = uid + ".ics";
     }*/
 
-    //Anche questi erano passati come parametri
     QString summary = "Climbing";
     QTime end_time(18,30);
     QDateTime endDateTime(start_date, end_time);
@@ -99,7 +98,6 @@ void MainWindow::on_getButton_clicked()
     }*/
 
     requestString.append("END:VEVENT\r\nEND:VCALENDAR");
-
     int buffersize = buffer->write(requestString.toUtf8());
     buffer->seek(0);
     buffer->size();
@@ -125,8 +123,8 @@ void MainWindow::on_getButton_clicked()
     request.setSslConfiguration(conf);
 
     QNetworkAccessManager m_UploadNetworkManager;
-
     QNetworkReply* m_pUploadReply = m_UploadNetworkManager.put(request, buffer);
+
 
     if (NULL != m_pUploadReply)
     {
@@ -147,14 +145,14 @@ void MainWindow::on_getButton_clicked()
     }
 }
 
-void handleUploadHTTPError(void)
+void MainWindow::handleUploadHTTPError(void)
 {
-      qDebug() << "";
+      qDebug() << "HTTP ERROR!";
 }
 
-void handleUploadFinished(void)
+void MainWindow::handleUploadFinished(void)
 {
-      qDebug() << "";
+      qDebug() << "UPLOAD FINISHED";
 }
 
 
