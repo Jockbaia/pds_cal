@@ -4,10 +4,22 @@
 #include <QtNetwork/QNetworkRequest>
 #include <QtNetwork/QNetworkReply>
 
+#include <iostream>
+
 #include <QDebug>
 #include <QBuffer>
 #include <QDateTime>
 #include <QTimer>
+#include <QAuthenticator>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QAuthenticator>
+#include <QObject>
+
+#include <thread>
+#include <mutex>
+#include <ctime>
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -30,130 +42,56 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_getButton_clicked()
 {
-    // mManager->get(QNetworkRequest(QUrl(ui->urlLineEdit->text())));
+    QNetworkRequest request;
+    QDate start_date(2022, 05, 21);
+    QTime start_time(14, 30);
+    QTime end_time(18,30);
+    QDateTime endDateTime(start_date, end_time);
+    QDateTime startDateTime(start_date, start_time);    // Local Time, non ho trovato un modo facile per scegliere il fuso orario
+    QString uid = QDateTime::currentDateTime().toString("yyyyMMdd-HHMM-00ss") + "-0000-" + startDateTime.toString("yyyyMMddHHMM");
+    QString filename = uid + ".ics";
+    request.setUrl(QUrl("https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/test/" + filename));
+    request.setAttribute(QNetworkRequest::Http2AllowedAttribute, false); // Fallback to HTTP 1.1
+        //"The "If-None-Match: *" request header ensures that the client will not inadvertently overwrite an existing resource
+        //if the last path segment turned out to already be used"
+    request.setRawHeader("If-None-Match", "*");
+    request.setRawHeader("Content-Type", "text/calendar; charset=utf-8");
 
-    // AUTHENTICATION
-
-    QString username = ui->username_login->text();
-    QString pass = ui->password_login->text();
-    QString concatenated = username + ":" + pass; // username:password
-    QString authorization = "Basic ";
-    QByteArray data = concatenated.toLocal8Bit().toBase64();
-    authorization.append(data);
-
-    qDebug() << "[AUTH]";
-    qDebug() << "name: " + username;
-    qDebug() << "password: " + pass;
-    qDebug() << "digest: " + data;
-
-    // !AUTHENTICATION
-
-    /* QString headerData = "Basic " + data;
-    QNetworkRequest request=QNetworkRequest(QUrl(ui->urlLineEdit->text()));
-    request.setRawHeader("Authorization", headerData.toLocal8Bit());
-    mManager->get(request); */
+    QString requestString = "BEGIN:VCALENDAR\r\n"
+                               "VERSION:2.0\r\n"
+                               "BEGIN:VEVENT\r\n"
+                               "UID:" + uid + "\r\n"
+                               "DTSTAMP:" + QDateTime::currentDateTime().toString("yyyyMMddTHHmmssZ") + "\r\n"
+                               "DTSTART:" + startDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
+                               "DTEND:" + endDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
+                               "SUMMARY:" + "TEST1-SUMMARY" + "\r\n"
+                               "LOCATION:" + "TEST1-LOCATION" + "\r\n"
+                               "DESCRIPTION:" + "TEST1-DESCRIPTION" + "\r\n";
 
     QBuffer* buffer = new QBuffer();
     buffer->open(QIODevice::ReadWrite);
-    qDebug() << "[NEW_EVENT]";
-
-    QDate start_date(2022, 05, 21);
-    QTime start_time(14, 30);
-    QDateTime startDateTime(start_date, start_time);    // Local Time, non ho trovato un modo facile per scegliere il fuso orario
-    QString uid = QDateTime::currentDateTime().toString("yyyyMMdd-HHMM-00ss") + "-0000-" + startDateTime.toString("yyyyMMddHHMM");
-    QString filename = uid + ".ics";    // portato fuori dall'if commmentato
-
-    // Questo credo andrà reinserito dopo
-    /*if (filename.isEmpty())
-    {
-      filename = uid + ".ics";
-    }*/
-
-    QString summary = "Climbing";
-    QTime end_time(18,30);
-    QDateTime endDateTime(start_date, end_time);
-    QString location = "Espoo";
-    QString description = "It's in the summary :)";
-    QString requestString = "BEGIN:VCALENDAR\r\n"
-                            "BEGIN:VEVENT\r\n"
-                            "UID:" + uid + "\r\n"
-                            "VERSION:2.0\r\n"
-                            "DTSTAMP:" + QDateTime::currentDateTime().toString("yyyyMMddTHHmmssZ") + "\r\n"
-                            "SUMMARY:" + summary + "\r\n"
-                            "DTSTART:" + startDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
-                            "DTEND:" + endDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
-                            "LOCATION:" + location + "\r\n"
-                            "DESCRIPTION:" + description + "\r\n"
-                            "TRANSP:OPAQUE\r\n";
-
-    // Questa è roba opzionale che credo serva per gli eventi ripetuti
-    /*if (!rrule.isEmpty())
-    {
-      requestString.append("RRULE:" + rrule + "\r\n");
-    }
-
-    if (!exdate.isEmpty())
-    {
-      requestString.append("EXDATE:" + exdate + "\r\n");
-    }*/
-
-    requestString.append("END:VEVENT\r\nEND:VCALENDAR");
-    int buffersize = buffer->write(requestString.toUtf8());
+    int bufferSize = buffer->write(requestString.toUtf8());
     buffer->seek(0);
-    buffer->size();
-
-    // L'originale creava QByteArray vuoto e gli appendeva la stringa ma non funziona nella versione 6.3, quindi questa conversione potrebbe essere un problema
-    QByteArray contentlength = QString::number(buffersize).toLocal8Bit();
-    // contentlength.append(QString::number(buffersize));
-
-    QNetworkRequest request;
-    // Per l'url, la stringa dovrebbe essere host name + filename, con host name definito come attributo di classe
-    // Potrei aver scazzato l'host name, non ne sono sicura
-    request.setUrl(QUrl("https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/test/" + filename));
-    request.setRawHeader("User-Agent", "CalendarClient_CalDAV"); // ?
-    request.setRawHeader("Authorization", authorization.toUtf8());
-    request.setRawHeader("Depth", "0");
-    request.setRawHeader("Prefer", "return-minimal");
-    request.setRawHeader("Content-Type", "text/calendar; charset=utf-8");
-    request.setRawHeader("Content-Length", contentlength); // qui usa il QByteArray di cui non sono sicura
+    QByteArray contentLength;
+    contentLength.append(QString::number(bufferSize).toStdString());
+    request.setRawHeader("Content-Length", contentLength);
 
 
-    QSslConfiguration conf = request.sslConfiguration();
-    conf.setPeerVerifyMode(QSslSocket::VerifyNone);
-    request.setSslConfiguration(conf);
 
-    QNetworkAccessManager m_UploadNetworkManager;
-    QNetworkReply* m_pUploadReply = m_UploadNetworkManager.put(request, buffer);
+    QNetworkAccessManager *_manager;
+    QNetworkReply* _reply = _manager->put(request, buffer);
 
+    // When request ends check the status (200 OK or not) and then handle the Reply
+    connect(_reply, SIGNAL(finished()), this, SLOT(handleAddingVEventFinished()));  //so we use this
+    // If authentication is required, provide credentials
+    connect(_manager, &QNetworkAccessManager::authenticationRequired, this, &MainWindow::handleAuthentication);
 
-    if (NULL != m_pUploadReply)
-    {
-      connect(m_pUploadReply, SIGNAL(error(QNetworkReply::NetworkError)),
-              this, SLOT(handleUploadHTTPError()));
-
-      connect(m_pUploadReply, SIGNAL(finished()),
-              this, SLOT(handleUploadFinished()));
-
-      QTimer m_UploadRequestTimeoutTimer;
-      m_UploadRequestTimeoutTimer.start(2000);
-    }
-    else
-    {
-      qDebug() << ": " << "ERROR: Invalid reply pointer when requesting URL.";
-      // prossima riga commentata perché servirebbe copiare altra roba per farla funzionare (credo)
-      // emit error("Invalid reply pointer when requesting URL.");
-    }
 }
 
-void MainWindow::handleUploadHTTPError(void)
+void MainWindow::handleAuthentication(QNetworkReply *reply, QAuthenticator *q) const
 {
-      qDebug() << "HTTP ERROR!";
+      q->setUser("progetto-pds");
+      q->setPassword("progetto-pds");
 }
-
-void MainWindow::handleUploadFinished(void)
-{
-      qDebug() << "UPLOAD FINISHED";
-}
-
 
 

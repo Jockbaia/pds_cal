@@ -20,10 +20,9 @@ public:
 
 private slots:
     void on_getButton_clicked();
-
+    void handleAuthentication(QNetworkReply *reply, QAuthenticator *q) const;
 protected slots:
-    void handleUploadHTTPError(void);
-    void handleUploadFinished(void);
+
 
 private:
     Ui::pds_cal *ui;
