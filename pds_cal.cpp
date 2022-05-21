@@ -78,11 +78,18 @@ void MainWindow::on_getButton_clicked()
 
 
 
-    QNetworkAccessManager *_manager;
-    QNetworkReply* _reply = _manager->put(request, buffer);
+    QNetworkAccessManager *_manager = new QNetworkAccessManager();
+    QNetworkReply* _reply = nullptr;
+    _reply = _manager->put(request, buffer);
 
     // When request ends check the status (200 OK or not) and then handle the Reply
     connect(_reply, SIGNAL(finished()), this, SLOT(handleAddingVEventFinished()));  //so we use this
+
+    if (NULL != _reply)
+    {
+        qDebug() << "received:\r\n" << _reply->readAll();
+        // emit forceSynchronization();
+    }
     // If authentication is required, provide credentials
     connect(_manager, &QNetworkAccessManager::authenticationRequired, this, &MainWindow::handleAuthentication);
 
@@ -92,6 +99,18 @@ void MainWindow::handleAuthentication(QNetworkReply *reply, QAuthenticator *q) c
 {
       q->setUser("progetto-pds");
       q->setPassword("progetto-pds");
+}
+
+void MainWindow::handleAddingVEventFinished(QNetworkReply *reply) const
+{
+  qDebug() << "HTTP upload finished";
+
+  // Non possiamo contorllare qui la reply perché è definita in get_button_clicked
+  /*if (NULL != m_pUploadReply)
+  {
+    QDEBUG << m_DisplayName << ": " << "received:\r\n" << m_pUploadReply->readAll();
+    emit forceSynchronization();
+  }*/
 }
 
 

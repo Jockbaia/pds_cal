@@ -21,6 +21,7 @@ public:
 private slots:
     void on_getButton_clicked();
     void handleAuthentication(QNetworkReply *reply, QAuthenticator *q) const;
+    void handleAddingVEventFinished(QNetworkReply *reply) const;
 protected slots:
 
 
