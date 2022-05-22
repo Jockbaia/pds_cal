@@ -5,20 +5,15 @@
 #include <QtNetwork/QNetworkReply>
 
 #include <iostream>
+#include <windows.h>
 
 #include <QDebug>
 #include <QBuffer>
 #include <QDateTime>
 #include <QTimer>
 #include <QAuthenticator>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
 #include <QAuthenticator>
 #include <QObject>
-
-#include <thread>
-#include <mutex>
-#include <ctime>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -42,75 +37,105 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_getButton_clicked()
 {
+    login("progetto-pds", "progetto-pds");
+    downloadToDoData();
+}
+
+void MainWindow::login(std::string usr, std::string pwd) {
+    QString _usr = QString::fromStdString(usr);
+    QString _pwd = QString::fromStdString(pwd);
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
+
+    connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(login_slot(QNetworkReply*)));
+    connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
+
     QNetworkRequest request;
+
+    request.setUrl(QUrl("https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds"));
+    request.setRawHeader("Depth", "0");
+    request.setRawHeader("Prefer", "return-minimal");
+    request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
+
+    QByteArray req_propfind = "<d:propfind xmlns:d=\"DAV:\">\n"
+                              "  <d:prop>\n"
+                              "     <d:current-user-principal />\n"
+                              "  </d:prop>\n"
+                              "</d:propfind>";
+
+    QNetworkReply *reply = manager->sendCustomRequest(request,"PROPFIND", req_propfind);
+    QString response = reply->readAll();
+    qDebug() << "[Login] " << reply;
+
+}
+
+void MainWindow::login_slot(QNetworkReply* reply) {
+    if (reply->error() == QNetworkReply::NoError) {
+        qDebug() << "[Logged]";
+        QString strReply = (QString)reply->readAll();
+    }
+    else {
+        qDebug() << "[Failure]" << reply -> errorString();
+        delete reply;
+    }
+}
+
+void MainWindow::do_authentication(QNetworkReply *, QAuthenticator *q) {
+    q->setUser(QString::fromStdString("progetto-pds"));
+    q->setPassword(QString::fromStdString("progetto-pds"));
+}
+
+void MainWindow::downloadToDoData() {
+
+    // CONNECTION
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
+    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
+    connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
+
+    // TIMESTAMPS
     QDate start_date(2022, 05, 21);
     QTime start_time(14, 30);
     QTime end_time(18,30);
     QDateTime endDateTime(start_date, end_time);
-    QDateTime startDateTime(start_date, start_time);    // Local Time, non ho trovato un modo facile per scegliere il fuso orario
+    QDateTime startDateTime(start_date, start_time);
+
+    // UID
     QString uid = QDateTime::currentDateTime().toString("yyyyMMdd-HHMM-00ss") + "-0000-" + startDateTime.toString("yyyyMMddHHMM");
     QString filename = uid + ".ics";
-    request.setUrl(QUrl("https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/test/" + filename));
-    request.setAttribute(QNetworkRequest::Http2AllowedAttribute, false); // Fallback to HTTP 1.1
-        //"The "If-None-Match: *" request header ensures that the client will not inadvertently overwrite an existing resource
-        //if the last path segment turned out to already be used"
+    QNetworkRequest request;
+
+    // SETTING HEADER
+    QString myUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/test/" + uid + ".ics";
+    request.setUrl(QUrl(myUrl));
+    request.setRawHeader("Depth", "1");
+    request.setRawHeader("Prefer", "return-minimal");
     request.setRawHeader("If-None-Match", "*");
-    request.setRawHeader("Content-Type", "text/calendar; charset=utf-8");
+    request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
 
-    QString requestString = "BEGIN:VCALENDAR\r\n"
-                               "VERSION:2.0\r\n"
-                               "BEGIN:VEVENT\r\n"
-                               "UID:" + uid + "\r\n"
-                               "DTSTAMP:" + QDateTime::currentDateTime().toString("yyyyMMddTHHmmssZ") + "\r\n"
-                               "DTSTART:" + startDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
-                               "DTEND:" + endDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
-                               "SUMMARY:" + "TEST1-SUMMARY" + "\r\n"
-                               "LOCATION:" + "TEST1-LOCATION" + "\r\n"
-                               "DESCRIPTION:" + "TEST1-DESCRIPTION" + "\r\n";
+    QString request_report = "BEGIN:VCALENDAR\n"
+            "BEGIN:VEVENT\n"
+            "UID:" + uid + "\n"
+            "SUMMARY:XXXXX\n"
+            "DTSTART:" + startDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
+            "DTEND:" + endDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
+            "END:VEVENT\n"
+            "END:VCALENDAR\n";
 
-    QBuffer* buffer = new QBuffer();
-    buffer->open(QIODevice::ReadWrite);
-    int bufferSize = buffer->write(requestString.toUtf8());
-    buffer->seek(0);
-    QByteArray contentLength;
-    contentLength.append(QString::number(bufferSize).toStdString());
-    request.setRawHeader("Content-Length", contentLength);
+    QByteArray converted_report = request_report.toUtf8();
 
+    QNetworkReply *reply = manager->put(request, converted_report);
+    QString response = reply->readAll();
+    qDebug() << "[Add Event] " << reply;
+}
 
-
-    QNetworkAccessManager *_manager = new QNetworkAccessManager();
-    QNetworkReply* _reply = nullptr;
-    _reply = _manager->put(request, buffer);
-
-    // When request ends check the status (200 OK or not) and then handle the Reply
-    connect(_reply, SIGNAL(finished()), this, SLOT(handleAddingVEventFinished()));  //so we use this
-
-    if (NULL != _reply)
-    {
-        qDebug() << "received:\r\n" << _reply->readAll();
-        // emit forceSynchronization();
+void MainWindow::report_function(QNetworkReply* reply) {
+    if (reply->error() == QNetworkReply::NoError) {
+        QString strReply = (QString)reply->readAll();
+        qDebug() << "[OK]";
     }
-    // If authentication is required, provide credentials
-    connect(_manager, &QNetworkAccessManager::authenticationRequired, this, &MainWindow::handleAuthentication);
-
-}
-
-void MainWindow::handleAuthentication(QNetworkReply *reply, QAuthenticator *q) const
-{
-      q->setUser("progetto-pds");
-      q->setPassword("progetto-pds");
-}
-
-void MainWindow::handleAddingVEventFinished(QNetworkReply *reply) const
-{
-  qDebug() << "HTTP upload finished";
-
-  // Non possiamo contorllare qui la reply perché è definita in get_button_clicked
-  /*if (NULL != m_pUploadReply)
-  {
-    QDEBUG << m_DisplayName << ": " << "received:\r\n" << m_pUploadReply->readAll();
-    emit forceSynchronization();
-  }*/
+    else {
+        qDebug() << "[Failure]" << reply->errorString();
+        delete reply;
+    }
 }
 
 

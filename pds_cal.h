@@ -20,8 +20,11 @@ public:
 
 private slots:
     void on_getButton_clicked();
-    void handleAuthentication(QNetworkReply *reply, QAuthenticator *q) const;
-    void handleAddingVEventFinished(QNetworkReply *reply) const;
+    void login(std::string usr, std::string pwd);
+    void login_slot(QNetworkReply* reply);
+    void do_authentication(QNetworkReply *, QAuthenticator *q);
+    void downloadToDoData();
+    void report_function(QNetworkReply* reply);
 protected slots:
 
 
