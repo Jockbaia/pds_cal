@@ -21,7 +21,8 @@ set(PROJECT_SOURCES
         pds_cal.cpp
         pds_cal.h
         pds_cal.ui
-
+        calendar_manager.h
+        calendar_manager.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
