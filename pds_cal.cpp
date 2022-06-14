@@ -39,8 +39,8 @@ void MainWindow::on_getButton_clicked()
 {
     login("progetto-pds", "progetto-pds");
     // saveNewEvent();
-    // getAllEvents();
-    deleteEvent();
+    getAllEvents();
+    //deleteEvent();
 }
 
 void MainWindow::login(std::string usr, std::string pwd) {
@@ -122,11 +122,12 @@ void MainWindow::deleteEvent() {
     QString header = "Basic " + user_pass;
 
     // QString filename = "7f449f88-1b1b-411b-ac73-0fa2befcba50.ics"; // not found
-    QString filename = "7f449f88-1b1b-411b-ac73-0fa2befcba50"; // not found
+    // QString filename = "7f449f88-1b1b-411b-ac73-0fa2befcba50"; // not found
     // QString filename = "test123"; // not found
+    QString filename = "20220522-2305-0026-0000-202205211405.ics"; // event that we added with Qt - seems to work
 
-    // QString baseUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/test/";
-    QString baseUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/";
+    QString baseUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/test/";
+    //QString baseUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/";
 
     // le righe commentate (prese da altre richieste) sono alternative a quelle non commentate (dal progetto vecchio)
     QNetworkRequest request;
