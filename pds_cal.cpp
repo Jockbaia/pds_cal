@@ -93,6 +93,7 @@ void MainWindow::getAllEvents() {
     QByteArray user_pass = concatenated.toLocal8Bit().toBase64();
     QString header = "Basic " + user_pass;
     QString baseUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/test?export";
+
     QNetworkRequest request = QNetworkRequest(baseUrl);
 
     request.setRawHeader("Authorization", header.toLocal8Bit());
@@ -121,23 +122,26 @@ void MainWindow::deleteEvent() {
     QString header = "Basic " + user_pass;
 
     // QString filename = "7f449f88-1b1b-411b-ac73-0fa2befcba50.ics"; // not found
-    // QString filename = "7f449f88-1b1b-411b-ac73-0fa2befcba50"; // not found
-    QString filename = "test123"; // not found
+    QString filename = "7f449f88-1b1b-411b-ac73-0fa2befcba50"; // not found
+    // QString filename = "test123"; // not found
 
-    QString baseUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/test/";
+    // QString baseUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/test/";
+    QString baseUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/";
 
+    // le righe commentate (prese da altre richieste) sono alternative a quelle non commentate (dal progetto vecchio)
     QNetworkRequest request;
     request.setUrl(QUrl(baseUrl + filename));
     request.setRawHeader("User-Agent", "CalendarClient_CalDAV");
     request.setRawHeader("Authorization", header.toUtf8());
     request.setRawHeader("Depth", "0");
+    //request.setRawHeader("Depth", "1");
     request.setRawHeader("Prefer", "return-minimal");
     request.setRawHeader("Content-Type", "text/calendar; charset=utf-8");
+    //request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
     request.setRawHeader("Content-Length", 0);
+    // request.setRawHeader("Content-Length", "XXXX");
 
-    // request.setRawHeader("Depth", "1");
     // request.setRawHeader("If-None-Match", "*");
-    // request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
 
     qDebug() << "Deleting" << request.url();
 
