@@ -23,9 +23,12 @@ private slots:
     void login(std::string usr, std::string pwd);
     void login_slot(QNetworkReply* reply);
     void do_authentication(QNetworkReply *, QAuthenticator *q);
-    void saveNewEvent();
+
     void getAllEvents();
+    void createEvent();
+    void updateEvent();
     void deleteEvent();
+
     void report_function(QNetworkReply* reply);
 protected slots:
 

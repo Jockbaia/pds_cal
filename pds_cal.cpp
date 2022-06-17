@@ -39,8 +39,9 @@ void MainWindow::on_getButton_clicked()
 {
     login("progetto-pds", "progetto-pds");
     // saveNewEvent();
-    getAllEvents();
+    // getAllEvents();
     //deleteEvent();
+    updateEvent();
 }
 
 void MainWindow::login(std::string usr, std::string pwd) {
@@ -104,9 +105,11 @@ void MainWindow::getAllEvents() {
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply*, QAuthenticator*)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
 
     manager->get(request);
+
     // The following code is useless, because the reply can only be handled in the slot (report_function)
     // QString response = reply->readAll();
     // qDebug() << "[Read all events] " << response;
+
 }
 
 void MainWindow::deleteEvent() {
@@ -172,7 +175,7 @@ void MainWindow::deleteEvent() {
     }*/
 }
 
-void MainWindow::saveNewEvent() {
+void MainWindow::createEvent() {
 
     // CONNECTION
     QNetworkAccessManager *manager = new QNetworkAccessManager();
@@ -213,6 +216,48 @@ void MainWindow::saveNewEvent() {
     QNetworkReply *reply = manager->put(request, converted_report);
     QString response = reply->readAll();
     qDebug() << "[Add Event] " << reply;
+}
+
+void MainWindow::updateEvent() {
+
+    // EDIT DATA
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
+    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
+    connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
+
+    // TIMESTAMPS
+    QString uid = "20220522-2305-0026-0000-202205211405";
+    QDate start_date(2022, 05, 25);
+    QTime start_time(18, 30);
+    QTime end_time(23,30);
+
+    QDateTime endDateTime(start_date, end_time);
+    QDateTime startDateTime(start_date, start_time);
+    QString filename = uid + ".ics";
+    QNetworkRequest request;
+
+    // SETTING HEADER
+    QString myUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/test/" + uid + ".ics";
+    request.setUrl(QUrl(myUrl));
+    request.setRawHeader("Depth", "1");
+    request.setRawHeader("Prefer", "return-minimal");
+    request.setRawHeader("If-None-Match", "*");
+    request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
+
+    QString request_report = "BEGIN:VCALENDAR\n"
+            "BEGIN:VEVENT\n"
+            "UID:" + uid + "\n"
+            "SUMMARY:EDITTTSSSSS\n"
+            "DTSTART:" + startDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
+            "DTEND:" + endDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
+            "END:VEVENT\n"
+            "END:VCALENDAR\n";
+
+    QByteArray converted_report = request_report.toUtf8();
+
+    QNetworkReply *reply = manager->put(request, converted_report);
+    QString response = reply->readAll();
+    qDebug() << "[Edit Event] " << reply;
 }
 
 void MainWindow::report_function(QNetworkReply* reply) {
