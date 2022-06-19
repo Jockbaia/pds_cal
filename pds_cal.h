@@ -24,10 +24,10 @@ private slots:
     void login_slot(QNetworkReply* reply);
     void do_authentication(QNetworkReply *, QAuthenticator *q);
 
-    void getAllEvents();
-    void createEvent();
-    void updateEvent();
-    void deleteEvent();
+    void getAllEvents(QString user, QString pass, QString calendar_name);
+    void createEvent(QString user, QString calendar_name, QString summary, QDate start_date, QTime start_time, QTime end_time);
+    void updateEvent(QString user, QString calendar_name, QString uid, QString summary, QDate start_date, QTime start_time, QTime end_time);
+    void deleteEvent(QString user, QString pass, QString calendar_name, QString uid);
 
     void report_function(QNetworkReply* reply);
 protected slots:

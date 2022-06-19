@@ -21,12 +21,6 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::pds_cal)
 {
     ui->setupUi(this);
-    /*mManager = new QNetworkAccessManager(this);
-    connect(mManager, &QNetworkAccessManager::finished, this, [&](QNetworkReply *reply){
-        QByteArray data = reply->readAll();
-        QString str = QString::fromLatin1(data);
-        ui->plainTextEdit->setPlainText(str);
-    });*/
 }
 
 MainWindow::~MainWindow()
@@ -38,10 +32,27 @@ MainWindow::~MainWindow()
 void MainWindow::on_getButton_clicked()
 {
     login("progetto-pds", "progetto-pds");
-    // saveNewEvent();
-    // getAllEvents();
-    //deleteEvent();
-    updateEvent();
+
+    // VARIABILI DA PASSARE ALL'ESTERNO
+    // per ora le metto qui in modo da pulire i singoli metodi
+
+    QString user = "progetto-pds";
+    QString password = "progetto-pds";
+    QString calendar_name = "test";
+    QString uid = "20220619-1506-0011-0000-202206101306"; // UID evento di prova
+    QString summary = "ESAME PDS";
+    QDate start_date(2022, 06, 10);
+    QTime start_time(13, 30);
+    QTime end_time(15,00);
+
+
+    // createEvent(user, calendar_name, summary, start_date, start_time, end_time);
+    // getAllEvents(user, password, calendar_name);
+    deleteEvent(user, password, calendar_name, uid);
+
+    // DA FIXARE
+    // updateEvent(user, calendar_name, uid, summary, start_date, start_time, end_time);
+
 }
 
 void MainWindow::login(std::string usr, std::string pwd) {
@@ -87,32 +98,26 @@ void MainWindow::do_authentication(QNetworkReply *, QAuthenticator *q) {
     q->setPassword(QString::fromStdString("progetto-pds"));
 }
 
-void MainWindow::getAllEvents() {
+void MainWindow::getAllEvents(QString user, QString pass, QString calendar_name) {
 
     // SETTING UP REQUEST
-    QString concatenated = "progetto-pds:progetto-pds";
+    QString concatenated = user + ":" + pass;
     QByteArray user_pass = concatenated.toLocal8Bit().toBase64();
     QString header = "Basic " + user_pass;
-    QString baseUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/test?export";
+    QString baseUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/" + user + "/" + calendar_name + "?export";
 
     QNetworkRequest request = QNetworkRequest(baseUrl);
-
     request.setRawHeader("Authorization", header.toLocal8Bit());
 
     // CONNECTION
     QNetworkAccessManager *manager = new QNetworkAccessManager();
     connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply*, QAuthenticator*)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
-
     manager->get(request);
-
-    // The following code is useless, because the reply can only be handled in the slot (report_function)
-    // QString response = reply->readAll();
-    // qDebug() << "[Read all events] " << response;
 
 }
 
-void MainWindow::deleteEvent() {
+void MainWindow::deleteEvent(QString user, QString pass, QString calendar_name, QString uid) {
 
     // CONNECTION
     QNetworkAccessManager *manager = new QNetworkAccessManager();
@@ -120,82 +125,42 @@ void MainWindow::deleteEvent() {
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
 
     // SETTING UP REQUEST
-    QString concatenated = "progetto-pds:progetto-pds";
+    QString concatenated = user + ":" + pass;
     QByteArray user_pass = concatenated.toLocal8Bit().toBase64();
     QString header = "Basic " + user_pass;
+    QString filename = uid + ".ics"; // event that we added with Qt - seems to work
+    QString baseUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/" + user + "/" + calendar_name + "/";
 
-    // QString filename = "7f449f88-1b1b-411b-ac73-0fa2befcba50.ics"; // not found
-    // QString filename = "7f449f88-1b1b-411b-ac73-0fa2befcba50"; // not found
-    // QString filename = "test123"; // not found
-    QString filename = "20220522-2305-0026-0000-202205211405.ics"; // event that we added with Qt - seems to work
-
-    QString baseUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/test/";
-    //QString baseUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/";
-
-    // le righe commentate (prese da altre richieste) sono alternative a quelle non commentate (dal progetto vecchio)
     QNetworkRequest request;
     request.setUrl(QUrl(baseUrl + filename));
     request.setRawHeader("User-Agent", "CalendarClient_CalDAV");
     request.setRawHeader("Authorization", header.toUtf8());
     request.setRawHeader("Depth", "0");
-    //request.setRawHeader("Depth", "1");
     request.setRawHeader("Prefer", "return-minimal");
     request.setRawHeader("Content-Type", "text/calendar; charset=utf-8");
-    //request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
     request.setRawHeader("Content-Length", 0);
-    // request.setRawHeader("Content-Length", "XXXX");
-
-    // request.setRawHeader("If-None-Match", "*");
 
     qDebug() << "Deleting" << request.url();
-
-
-    /*QSslConfiguration conf = request.sslConfiguration();
-    conf.setPeerVerifyMode(QSslSocket::VerifyNone);
-    request.setSslConfiguration(conf);*/
-
     QNetworkReply *reply = manager->deleteResource(request);
     QString response = reply->readAll();
     qDebug() << "[Deleting Event] " << reply;
-
-    /*if (NULL != m_pUploadReply)
-    {
-      connect(m_pUploadReply, SIGNAL(error(QNetworkReply::NetworkError)),
-              this, SLOT(handleUploadHTTPError()));
-
-      connect(m_pUploadReply, SIGNAL(finished()),
-              this, SLOT(handleUploadFinished()));
-
-      m_UploadRequestTimeoutTimer.start(m_RequestTimeoutMS);
-    }
-    else
-    {
-      QDEBUG << m_DisplayName << ": " << "ERROR: Invalid reply pointer when requesting URL.";
-      emit error("Invalid reply pointer when requesting URL.");
-    }*/
 }
 
-void MainWindow::createEvent() {
+void MainWindow::createEvent(QString user, QString calendar_name, QString summary, QDate start_date, QTime start_time, QTime end_time) {
 
     // CONNECTION
     QNetworkAccessManager *manager = new QNetworkAccessManager();
     connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
-
-    // TIMESTAMPS
-    QDate start_date(2022, 05, 25);
-    QTime start_time(18, 30);
-    QTime end_time(23,30);
     QDateTime endDateTime(start_date, end_time);
     QDateTime startDateTime(start_date, start_time);
 
     // UID
     QString uid = QDateTime::currentDateTime().toString("yyyyMMdd-HHMM-00ss") + "-0000-" + startDateTime.toString("yyyyMMddHHMM");
-    QString filename = uid + ".ics";
     QNetworkRequest request;
 
     // SETTING HEADER
-    QString myUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/test/" + uid + ".ics";
+    QString myUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/" + user + "/" + calendar_name + "/" + uid + ".ics";
     request.setUrl(QUrl(myUrl));
     request.setRawHeader("Depth", "1");
     request.setRawHeader("Prefer", "return-minimal");
@@ -205,7 +170,7 @@ void MainWindow::createEvent() {
     QString request_report = "BEGIN:VCALENDAR\n"
             "BEGIN:VEVENT\n"
             "UID:" + uid + "\n"
-            "SUMMARY:XXXXX\n"
+            "SUMMARY:" + summary + "\n"
             "DTSTART:" + startDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
             "DTEND:" + endDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
             "END:VEVENT\n"
@@ -218,26 +183,18 @@ void MainWindow::createEvent() {
     qDebug() << "[Add Event] " << reply;
 }
 
-void MainWindow::updateEvent() {
+void MainWindow::updateEvent(QString user, QString calendar_name, QString uid, QString summary, QDate start_date, QTime start_time, QTime end_time) {
 
-    // EDIT DATA
     QNetworkAccessManager *manager = new QNetworkAccessManager();
     connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
 
-    // TIMESTAMPS
-    QString uid = "20220522-2305-0026-0000-202205211405";
-    QDate start_date(2022, 05, 25);
-    QTime start_time(18, 30);
-    QTime end_time(23,30);
-
     QDateTime endDateTime(start_date, end_time);
     QDateTime startDateTime(start_date, start_time);
-    QString filename = uid + ".ics";
     QNetworkRequest request;
 
     // SETTING HEADER
-    QString myUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds/test/" + uid + ".ics";
+    QString myUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/" + user + "/" + calendar_name + "/" + uid + ".ics";
     request.setUrl(QUrl(myUrl));
     request.setRawHeader("Depth", "1");
     request.setRawHeader("Prefer", "return-minimal");
@@ -247,7 +204,7 @@ void MainWindow::updateEvent() {
     QString request_report = "BEGIN:VCALENDAR\n"
             "BEGIN:VEVENT\n"
             "UID:" + uid + "\n"
-            "SUMMARY:EDITTTSSSSS\n"
+            "SUMMARY:" + summary + "\n"
             "DTSTART:" + startDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
             "DTEND:" + endDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
             "END:VEVENT\n"
