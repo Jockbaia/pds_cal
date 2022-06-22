@@ -45,10 +45,10 @@ void MainWindow::on_getButton_clicked()
     QTime start_time(13, 30);
     QTime end_time(15,00);
 
-
+    login(user.toStdString(), password.toStdString());
     // createEvent(user, calendar_name, summary, start_date, start_time, end_time);
-    // getAllEvents(user, password, calendar_name);
-    deleteEvent(user, password, calendar_name, uid);
+    getAllEvents(user, password, calendar_name);
+    // deleteEvent(user, password, calendar_name, uid);
 
     // DA FIXARE
     // updateEvent(user, calendar_name, uid, summary, start_date, start_time, end_time);
