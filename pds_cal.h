@@ -20,7 +20,8 @@ public:
 
 private slots:
     void on_getButton_clicked();
-    void login(std::string usr, std::string pwd);
+    void on_loginButton_clicked();
+    bool login(std::string usr, std::string pwd);
     void login_slot(QNetworkReply* reply);
     void do_authentication(QNetworkReply *, QAuthenticator *q);
 

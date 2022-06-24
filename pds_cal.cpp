@@ -21,6 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::pds_cal)
 {
     ui->setupUi(this);
+    ui->stackedWidget->setCurrentIndex(0);
 }
 
 MainWindow::~MainWindow()
@@ -28,16 +29,25 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::on_loginButton_clicked() {
+
+    QString login_user = ui->username_login->text();
+    QString password = ui->password_login->text();
+
+    if (login(login_user.toStdString(), password.toStdString())) {
+        ui->stackedWidget->setCurrentIndex(1);
+    } else {
+        // TODO inserire messaggio di errore se USER / PWD sbagliata
+    }
+}
 
 void MainWindow::on_getButton_clicked()
 {
-    login("progetto-pds", "progetto-pds");
-
     // VARIABILI DA PASSARE ALL'ESTERNO
     // per ora le metto qui in modo da pulire i singoli metodi
 
-    QString user = "progetto-pds";
-    QString password = "progetto-pds";
+    QString user = ui->username_login->text();
+    QString password = ui->password_login->text();
     QString calendar_name = "test";
     QString uid = "20220619-1506-0011-0000-202206101306"; // UID evento di prova
     QString summary = "ESAME PDS";
@@ -55,7 +65,7 @@ void MainWindow::on_getButton_clicked()
 
 }
 
-void MainWindow::login(std::string usr, std::string pwd) {
+bool MainWindow::login(std::string usr, std::string pwd) {
     QString _usr = QString::fromStdString(usr);
     QString _pwd = QString::fromStdString(pwd);
     QNetworkAccessManager *manager = new QNetworkAccessManager();
@@ -79,6 +89,8 @@ void MainWindow::login(std::string usr, std::string pwd) {
     QNetworkReply *reply = manager->sendCustomRequest(request,"PROPFIND", req_propfind);
     QString response = reply->readAll();
     qDebug() << "[Login] " << reply;
+
+    return true;
 
 }
 
