@@ -21,6 +21,7 @@ public:
 private slots:
     void on_getButton_clicked();
     void on_loginButton_clicked();
+    void on_createEventButton_clicked();
     bool login(std::string usr, std::string pwd);
     void login_slot(QNetworkReply* reply);
     void do_authentication(QNetworkReply *, QAuthenticator *q);
@@ -29,7 +30,7 @@ private slots:
     void createEvent(QString user, QString calendar_name, QString summary, QDate start_date, QTime start_time, QTime end_time);
     void updateEvent(QString user, QString calendar_name, QString uid, QString summary, QDate start_date, QTime start_time, QTime end_time);
     void deleteEvent(QString user, QString pass, QString calendar_name, QString uid);
-
+    void cal_translator(QString data);
     void report_function(QNetworkReply* reply);
 protected slots:
 
