@@ -44,11 +44,7 @@ class Calendar {
     std::map<std::string, Event> events;
 };
 
-class Calendars {
-  public:
-    std::map<std::string, Calendar> calendars;
-};
-
+std::map<std::string, Calendar> calendars;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -73,7 +69,7 @@ void MainWindow::on_loginButton_clicked() {
     if (login(login_user.toStdString(), password.toStdString())) {
         ui->stackedWidget->setCurrentIndex(1);
         // TODO da implementare selezione calendario
-        getAllEvents(login_user, password, "test");
+        getAllEvents(login_user, password, "test-1");
     } else {
         // TODO inserire messaggio di errore se USER / PWD sbagliata
     }
@@ -93,7 +89,7 @@ void MainWindow::on_createEventButton_clicked() {
         ui -> success_create_event -> hide();
         ui -> error_create_event -> show();
     } else {
-        createEvent(user, "test", summary, start_date, start_time, end_time);
+        createEvent(user, "test-1", summary, start_date, start_time, end_time);
         ui -> success_create_event -> show();
         ui -> error_create_event -> hide();
     }
@@ -105,7 +101,7 @@ void MainWindow::on_getButton_clicked()
 
     QString user = "progetto-pds";
     QString password = "progetto-pds";
-    QString calendar_name = "test";
+    QString calendar_name = "test-1";
     QString uid = "20220619-1506-0011-0000-202206101306"; // UID evento di prova
     QString summary = "ESAME PDS";
     QDate start_date(2022, 06, 10);
@@ -117,14 +113,12 @@ void MainWindow::on_getButton_clicked()
     getAllEvents(user, password, calendar_name);
     // deleteEvent(user, password, calendar_name, uid);
 
-    // DA FIXARE
-    // updateEvent(user, calendar_name, uid, summary, start_date, start_time, end_time);
-
 }
 
 void MainWindow::traduce(QString data) {
 
     std::string s = data.toStdString();
+    std::string cal_data;
     std::string delimiter = "\r\nBEGIN:VEVENT";
     std::vector<std::string> calendar_data;
     Calendar my_calendar;
@@ -140,7 +134,8 @@ void MainWindow::traduce(QString data) {
 
     // creazione calendario locale
 
-    std::string cal_data = calendar_data[0];
+    if (calendar_data.empty()) {cal_data = data.toStdString();} // calendario con eventi
+    else {cal_data = calendar_data[0];} // calendario senza eventi
     delimiter = "\r\n";
     std::vector<std::string> current_cal;
     size_t cal_pos = 0;
@@ -150,14 +145,11 @@ void MainWindow::traduce(QString data) {
             cal_token = cal_data.substr(0, cal_pos);
             cal_data.erase(0, cal_pos + delimiter.length());
             current_cal.push_back(cal_token);
-            std::cout << cal_token << std::endl;
+            // std::cout << cal_token << std::endl;
     }
 
-    QString cl_id = QString::fromStdString(current_cal[5].substr(current_cal[5].find(":")).erase(0,1));
-    QString cl_co = QString::fromStdString(current_cal[6].substr(current_cal[6].find(":")).erase(0,1));
-
-    my_calendar.name = current_cal[5].substr(current_cal[5].find(":")).erase(0,1);
-    my_calendar.color = current_cal[6].substr(current_cal[6].find(":")).erase(0,1);
+    my_calendar.name = current_cal[4].substr(current_cal[4].find(":")).erase(0,1);
+    my_calendar.color = current_cal[5].substr(current_cal[5].find(":")).erase(0,1);
 
     // inserimento eventi calendario locale
 
@@ -182,17 +174,13 @@ void MainWindow::traduce(QString data) {
 
         my_event.UID = current_event[1].substr(current_event[1].find(":")).erase(0,1);
         my_event.summary = current_event[2].substr(current_event[2].find(":")).erase(0,1);
-        my_event.timestamp_start = QDateTime::fromString(ts_st,"yyyyMMddTHHmmssZ");
-        my_event.timestamp_end = QDateTime::fromString(ts_en,"yyyyMMddTHHmmssZ");
+        my_event.timestamp_start = QDateTime::fromString(ts_st,"yyyyMMddTHHmmss");
+        my_event.timestamp_end = QDateTime::fromString(ts_en,"yyyyMMddTHHmmss");
         my_event.creation_date = QDateTime::fromString(ts_da,"yyyyMMddTHHmmssZ");
         my_calendar.events[my_event.UID] = my_event;
-
-        // TODO: inserimento calendario in lista calendari
-        // calendars.calendars[my_calendar.name] = my_calendar;
-
     }
 
-
+    calendars[my_calendar.name] = my_calendar;
 
 }
 
@@ -301,14 +289,14 @@ void MainWindow::deleteEvent(QString user, QString pass, QString calendar_name, 
 
 void MainWindow::createEvent(QString user, QString calendar_name, QString summary, QDate start_date, QTime start_time, QTime end_time) {
 
-
     QNetworkAccessManager *manager = new QNetworkAccessManager();
-    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
-    connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
     QDateTime endDateTime(start_date, end_time);
     QDateTime startDateTime(start_date, start_time);
-
     QString uid = QDateTime::currentDateTime().toString("yyyyMMdd-HHMM-00ss") + "-0000-" + startDateTime.toString("yyyyMMddHHMM");
+
+    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_createEvent(QNetworkReply*, uid, calendar_name, summary, start_date, start_time, end_time)));
+    connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
+
     QNetworkRequest request;
 
     QString myUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/" + user + "/" + calendar_name + "/" + uid + ".ics";
@@ -334,37 +322,25 @@ void MainWindow::createEvent(QString user, QString calendar_name, QString summar
     qDebug() << "[Add Event] " << reply;
 }
 
-void MainWindow::updateEvent(QString user, QString calendar_name, QString uid, QString summary, QDate start_date, QTime start_time, QTime end_time) {
+void MainWindow::report_createEvent(QNetworkReply* reply, QString UID, QString calendar_name, QString summary, QDate start_date, QTime start_time, QTime end_time) {
 
-    QNetworkAccessManager *manager = new QNetworkAccessManager();
-    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
-    connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
+    if (reply->error() == QNetworkReply::NoError) {
+        QString strReply = (QString)reply->readAll();
+        qDebug() << "[Adding event]";
 
-    QDateTime endDateTime(start_date, end_time);
-    QDateTime startDateTime(start_date, start_time);
-    QNetworkRequest request;
+        Event my_event;
+        my_event.UID = UID.toStdString();
+        my_event.timestamp_start.setTime(start_time);
+        my_event.timestamp_end.setTime(end_time);
 
-    QString myUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/" + user + "/" + calendar_name + "/" + uid + ".ics";
-    request.setUrl(QUrl(myUrl));
-    request.setRawHeader("Depth", "1");
-    request.setRawHeader("Prefer", "return-minimal");
-    request.setRawHeader("If-None-Match", "*");
-    request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
-
-    QString request_report = "BEGIN:VCALENDAR\n"
-            "BEGIN:VEVENT\n"
-            "UID:" + uid + "\n"
-            "SUMMARY:" + summary + "\n"
-            "DTSTART:" + startDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
-            "DTEND:" + endDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
-            "END:VEVENT\n"
-            "END:VCALENDAR\n";
-
-    QByteArray converted_report = request_report.toUtf8();
-
-    QNetworkReply *reply = manager->put(request, converted_report);
-    QString response = reply->readAll();
-    qDebug() << "[Edit Event] " << reply;
+        // TODO PSEUDOCODICE - inserire valore nel calendario corrispondente
+        // auto x = calendars.find(calendar_name.toStdString());
+        // x[UID] = my_event;
+    }
+    else {
+        qDebug() << "[Failure]" << reply->errorString();
+        delete reply;
+    }
 }
 
 void MainWindow::report_function(QNetworkReply* reply) {
@@ -373,15 +349,6 @@ void MainWindow::report_function(QNetworkReply* reply) {
         QString strReply = (QString)reply->readAll();
         qDebug() << "[OK]";
         qDebug() << strReply;
-
-        /*switch(return_value)
-        {
-            case 0: break; // default
-            case 1: traduce(strReply); break; // get_all_events
-            case 2: break; // update_event
-            case 3: break; // create_event
-            case 4: break; // delete_event
-        }*/
     }
     else {
         qDebug() << "[Failure]" << reply->errorString();
