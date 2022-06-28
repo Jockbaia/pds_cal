@@ -32,7 +32,6 @@ private slots:
     void getAllEvents(QString user, QString pass, QString calendar_name);
     void report_getAllEvents(QNetworkReply* reply);
     void createEvent(QString user, QString calendar_name, QString summary, QDate start_date, QTime start_time, QTime end_time);
-    void report_createEvent(QNetworkReply* reply, QString UID, QString calendar_name, QString summary, QDate start_date, QTime start_time, QTime end_time);
     void deleteEvent(QString user, QString pass, QString calendar_name, QString uid);
     void report_function(QNetworkReply* reply);
 protected slots:

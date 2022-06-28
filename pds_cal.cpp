@@ -294,7 +294,7 @@ void MainWindow::createEvent(QString user, QString calendar_name, QString summar
     QDateTime startDateTime(start_date, start_time);
     QString uid = QDateTime::currentDateTime().toString("yyyyMMdd-HHMM-00ss") + "-0000-" + startDateTime.toString("yyyyMMddHHMM");
 
-    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_createEvent(QNetworkReply*, uid, calendar_name, summary, start_date, start_time, end_time)));
+    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
 
     QNetworkRequest request;
@@ -320,28 +320,17 @@ void MainWindow::createEvent(QString user, QString calendar_name, QString summar
     QNetworkReply *reply = manager->put(request, converted_report);
     QString response = reply->readAll();
     qDebug() << "[Add Event] " << reply;
+
+    // Aggiungo evento localmente
+    Event my_event;
+    my_event.UID = uid.toStdString();
+    my_event.timestamp_start.setTime(start_time);
+    my_event.timestamp_end.setTime(end_time);
+
+    // TODO controllare se giusta
+    auto x = calendars[calendar_name.toStdString()].events[uid.toStdString()] = my_event;
 }
 
-void MainWindow::report_createEvent(QNetworkReply* reply, QString UID, QString calendar_name, QString summary, QDate start_date, QTime start_time, QTime end_time) {
-
-    if (reply->error() == QNetworkReply::NoError) {
-        QString strReply = (QString)reply->readAll();
-        qDebug() << "[Adding event]";
-
-        Event my_event;
-        my_event.UID = UID.toStdString();
-        my_event.timestamp_start.setTime(start_time);
-        my_event.timestamp_end.setTime(end_time);
-
-        // TODO PSEUDOCODICE - inserire valore nel calendario corrispondente
-        // auto x = calendars.find(calendar_name.toStdString());
-        // x[UID] = my_event;
-    }
-    else {
-        qDebug() << "[Failure]" << reply->errorString();
-        delete reply;
-    }
-}
 
 void MainWindow::report_function(QNetworkReply* reply) {
 
