@@ -145,7 +145,6 @@ void MainWindow::traduce(QString data) {
             cal_token = cal_data.substr(0, cal_pos);
             cal_data.erase(0, cal_pos + delimiter.length());
             current_cal.push_back(cal_token);
-            // std::cout << cal_token << std::endl;
     }
 
     my_calendar.name = current_cal[4].substr(current_cal[4].find(":")).erase(0,1);
@@ -285,6 +284,11 @@ void MainWindow::deleteEvent(QString user, QString pass, QString calendar_name, 
     QNetworkReply *reply = manager->deleteResource(request);
     QString response = reply->readAll();
     qDebug() << "[Deleting Event] " << reply;
+
+    // Elimino evento localmente
+
+    calendars[calendar_name.toStdString()].events.erase(uid.toStdString());
+
 }
 
 void MainWindow::createEvent(QString user, QString calendar_name, QString summary, QDate start_date, QTime start_time, QTime end_time) {
@@ -322,13 +326,15 @@ void MainWindow::createEvent(QString user, QString calendar_name, QString summar
     qDebug() << "[Add Event] " << reply;
 
     // Aggiungo evento localmente
+
     Event my_event;
     my_event.UID = uid.toStdString();
-    my_event.timestamp_start.setTime(start_time);
-    my_event.timestamp_end.setTime(end_time);
+    my_event.summary = summary.toStdString();
+    my_event.timestamp_start = startDateTime;
+    my_event.timestamp_end = endDateTime;
 
-    // TODO controllare se giusta
-    auto x = calendars[calendar_name.toStdString()].events[uid.toStdString()] = my_event;
+    calendars[calendar_name.toStdString()].events[uid.toStdString()] = my_event;
+
 }
 
 
