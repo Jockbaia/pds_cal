@@ -39,7 +39,7 @@ private slots:
     QList<Event> getEventsOnDate(QDate date);
     void showEventsOnDate(QDate date);
     QString eventsListToString(QList<Event>);
-    void on_selected_date_changed();
+    void on_displayedCalendar_clicked(const QDate &date);
 
 protected slots:
 

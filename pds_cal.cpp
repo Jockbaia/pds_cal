@@ -56,17 +56,17 @@ MainWindow::MainWindow(QWidget *parent)
     ui -> error_create_event -> hide();
 
     ui->selectedDate->setAlignment(Qt::Alignment(Qt::AlignHCenter));
-    QObject::connect(ui->calendarWidget, SIGNAL(&QCalendarWidget::selectionChanged()),
-                     this, SLOT(MainWindow::on_selected_date_changed()));
+    ui->selectedDate->setText("Select a day");
+    ui->displayedCalendar->setSelectedDate(QDate::currentDate());
+    ui->displayedCalendar->setSelectionMode(QCalendarWidget::SingleSelection);
+    // TODO fix this connect, the slot is not called
+    connect(ui->displayedCalendar, SIGNAL(QCalendarWidget::activated(QDate)),
+                     this, SLOT(MainWindow::on_displayedCalendar_clicked(QDate)));
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
-}
-
-void MainWindow::on_selected_date_changed(){
-    showEventsOnDate(ui->calendarWidget->selectedDate());
 }
 
 void MainWindow::on_loginButton_clicked() {
@@ -78,8 +78,6 @@ void MainWindow::on_loginButton_clicked() {
         ui->stackedWidget->setCurrentIndex(1);
         // TODO da implementare selezione calendario
         getAllEvents(login_user, password, "test-1");
-        QDate currentDate = QDate::currentDate();
-        showEventsOnDate(currentDate);
     } else {
         // TODO inserire messaggio di errore se USER / PWD sbagliata
     }
@@ -87,7 +85,13 @@ void MainWindow::on_loginButton_clicked() {
 
 void MainWindow::showEventsOnDate(QDate date){
     ui->selectedDate->setText(date.toString());
-    ui->eventsList->insertPlainText(eventsListToString(getEventsOnDate(date)));
+    QString toShow = eventsListToString(getEventsOnDate(date));
+    if (toShow.isEmpty()){
+        ui->eventsList->setPlainText("No events to show for this date");
+        return;
+    }
+    ui->eventsList->setPlainText(toShow);
+    //ui->eventsList->insertPlainText(eventsListToString(getEventsOnDate(date)));
 }
 
 QList<Event> MainWindow::getEventsOnDate(QDate date){
@@ -390,4 +394,10 @@ void MainWindow::report_function(QNetworkReply* reply) {
     }
 }
 
+
+
+void MainWindow::on_displayedCalendar_clicked(const QDate &date)
+{
+    showEventsOnDate(date);
+}
 
