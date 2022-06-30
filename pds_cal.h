@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QtNetwork/QNetworkAccessManager>
+#include "event.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class pds_cal; }
@@ -34,6 +35,12 @@ private slots:
     void createEvent(QString user, QString calendar_name, QString summary, QDate start_date, QTime start_time, QTime end_time);
     void deleteEvent(QString user, QString pass, QString calendar_name, QString uid);
     void report_function(QNetworkReply* reply);
+
+    QList<Event> getEventsOnDate(QDate date);
+    void showEventsOnDate(QDate date);
+    QString eventsListToString(QList<Event>);
+    void on_selected_date_changed();
+
 protected slots:
 
 

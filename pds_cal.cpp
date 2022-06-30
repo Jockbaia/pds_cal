@@ -28,14 +28,14 @@
 #include <chrono>
 #include <thread>
 
-class Event {
+/*class Event {
   public:
     std::string UID;
     std::string summary;
     QDateTime timestamp_start;
     QDateTime timestamp_end;
     QDateTime creation_date;
-};
+};*/
 
 class Calendar {
   public:
@@ -54,11 +54,19 @@ MainWindow::MainWindow(QWidget *parent)
     ui->stackedWidget->setCurrentIndex(0);
     ui -> success_create_event -> hide();
     ui -> error_create_event -> hide();
+
+    ui->selectedDate->setAlignment(Qt::Alignment(Qt::AlignHCenter));
+    QObject::connect(ui->calendarWidget, SIGNAL(&QCalendarWidget::selectionChanged()),
+                     this, SLOT(MainWindow::on_selected_date_changed()));
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::on_selected_date_changed(){
+    showEventsOnDate(ui->calendarWidget->selectedDate());
 }
 
 void MainWindow::on_loginButton_clicked() {
@@ -70,9 +78,40 @@ void MainWindow::on_loginButton_clicked() {
         ui->stackedWidget->setCurrentIndex(1);
         // TODO da implementare selezione calendario
         getAllEvents(login_user, password, "test-1");
+        QDate currentDate = QDate::currentDate();
+        showEventsOnDate(currentDate);
     } else {
         // TODO inserire messaggio di errore se USER / PWD sbagliata
     }
+}
+
+void MainWindow::showEventsOnDate(QDate date){
+    ui->selectedDate->setText(date.toString());
+    ui->eventsList->insertPlainText(eventsListToString(getEventsOnDate(date)));
+}
+
+QList<Event> MainWindow::getEventsOnDate(QDate date){
+    QList<Event> toReturn;
+    for(auto const& cal : calendars){
+        std::map<std::string, Event> events = cal.second.events;
+        for (auto const& ev : events){
+            Event e = ev.second;
+            if (e.timestamp_start.date() == date ||
+                    e.timestamp_end.date() == date){
+                //the event either starts or ends (or both) on the requested date
+                toReturn.append(e);
+            }
+        }
+    }
+    return toReturn;
+}
+
+QString MainWindow::eventsListToString(QList<Event> eventsList){
+    QString formatted;
+    for (auto event : eventsList){
+        formatted = formatted + event.toString() + "\n";
+    }
+    return formatted;
 }
 
 void MainWindow::on_createEventButton_clicked() {
@@ -171,12 +210,12 @@ void MainWindow::traduce(QString data) {
         QString ts_en = QString::fromStdString(current_event[4].substr(current_event[4].find(":")).erase(0,1));
         QString ts_da = QString::fromStdString(current_event[5].substr(current_event[5].find(":")).erase(0,1));
 
-        my_event.UID = current_event[1].substr(current_event[1].find(":")).erase(0,1);
-        my_event.summary = current_event[2].substr(current_event[2].find(":")).erase(0,1);
+        my_event.UID = QString::fromStdString(current_event[1].substr(current_event[1].find(":")).erase(0,1));
+        my_event.summary = QString::fromStdString(current_event[2].substr(current_event[2].find(":")).erase(0,1));
         my_event.timestamp_start = QDateTime::fromString(ts_st,"yyyyMMddTHHmmss");
         my_event.timestamp_end = QDateTime::fromString(ts_en,"yyyyMMddTHHmmss");
         my_event.creation_date = QDateTime::fromString(ts_da,"yyyyMMddTHHmmssZ");
-        my_calendar.events[my_event.UID] = my_event;
+        my_calendar.events[my_event.UID.toStdString()] = my_event;
     }
 
     calendars[my_calendar.name] = my_calendar;
@@ -328,8 +367,8 @@ void MainWindow::createEvent(QString user, QString calendar_name, QString summar
     // Aggiungo evento localmente
 
     Event my_event;
-    my_event.UID = uid.toStdString();
-    my_event.summary = summary.toStdString();
+    my_event.UID = uid;
+    my_event.summary = summary;
     my_event.timestamp_start = startDateTime;
     my_event.timestamp_end = endDateTime;
 
