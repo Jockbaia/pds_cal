@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>376</height>
+    <height>363</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -128,58 +128,165 @@
         <x>0</x>
         <y>0</y>
         <width>801</width>
-        <height>381</height>
+        <height>441</height>
        </rect>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="Calendario">
        <attribute name="title">
-        <string>Calendario</string>
+        <string>Calendar</string>
        </attribute>
        <widget class="QCalendarWidget" name="displayedCalendar">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>411</width>
+          <width>341</width>
           <height>321</height>
          </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
         </property>
        </widget>
        <widget class="QLabel" name="selectedDate">
         <property name="geometry">
          <rect>
-          <x>420</x>
+          <x>340</x>
           <y>0</y>
-          <width>231</width>
-          <height>21</height>
+          <width>461</width>
+          <height>22</height>
          </rect>
         </property>
         <property name="styleSheet">
-         <string notr="true">background-color: rgb(0, 85, 255);
+         <string notr="true">background-color: rgb(0, 120, 215);
 color: rgb(255, 255, 255);
-font: 700 9pt &quot;Segoe UI&quot;;</string>
+font: 700 9pt &quot;Segoe UI&quot;;
+padding-left: 2px;
+padding-top: 2px;
+</string>
         </property>
         <property name="text">
          <string>TextLabel</string>
         </property>
        </widget>
-       <widget class="QPlainTextEdit" name="eventsList">
+       <widget class="QTextBrowser" name="eventsList">
         <property name="geometry">
          <rect>
-          <x>420</x>
-          <y>20</y>
-          <width>231</width>
-          <height>301</height>
+          <x>340</x>
+          <y>30</y>
+          <width>461</width>
+          <height>191</height>
          </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">border: 0px;
+padding: 3px;
+color: rgb(36,42,46);</string>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Tasks</string>
+       </attribute>
+       <widget class="QLabel" name="todoLabel">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>801</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(255, 195, 0);
+color: rgb(63, 63, 39);
+font: 700 9pt &quot;Segoe UI&quot;;
+padding-left: 5px;</string>
+        </property>
+        <property name="text">
+         <string>Tasks</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="createTodoButton">
+        <property name="geometry">
+         <rect>
+          <x>679</x>
+          <y>40</y>
+          <width>111</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Add task</string>
+        </property>
+       </widget>
+       <widget class="QPlainTextEdit" name="todo_summary">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>40</y>
+          <width>451</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="plainText">
+         <string>Describe your task</string>
+        </property>
+       </widget>
+       <widget class="QDateEdit" name="todo_due">
+        <property name="geometry">
+         <rect>
+          <x>470</x>
+          <y>40</y>
+          <width>201</width>
+          <height>31</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QTreeWidget" name="TODO_list">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>80</y>
+          <width>771</width>
+          <height>192</height>
+         </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
+        <column>
+         <property name="text">
+          <string>Name</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Due to</string>
+         </property>
+        </column>
+       </widget>
+       <widget class="QPushButton" name="deleteTodoButton">
+        <property name="geometry">
+         <rect>
+          <x>630</x>
+          <y>280</y>
+          <width>151</width>
+          <height>24</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Delete selected task</string>
         </property>
        </widget>
       </widget>
       <widget class="QWidget" name="Inserisci">
        <attribute name="title">
-        <string>Nuovo evento</string>
+        <string>New event</string>
        </attribute>
        <widget class="QTextEdit" name="event_title">
         <property name="enabled">
@@ -302,7 +409,7 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
          </rect>
         </property>
         <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;Errore! Ricontrolla i campi e riprova.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;Error! Check the fields and try again.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
        <widget class="QLabel" name="success_create_event">
@@ -318,7 +425,7 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
          </rect>
         </property>
         <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#00ff00;&quot;&gt;Evento aggiunto con successo&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#00ff00;&quot;&gt;Event added successfully&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
       </widget>

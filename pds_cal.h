@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QtNetwork/QNetworkAccessManager>
 #include "event.h"
+#include "todo.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class pds_cal; }
@@ -26,6 +27,8 @@ private slots:
     void on_getButton_clicked();
     void on_loginButton_clicked();
     void on_createEventButton_clicked();
+    void on_createTodoButton_clicked();
+    void on_deleteTodoButton_clicked();
     bool login(std::string usr, std::string pwd);
     void login_slot(QNetworkReply* reply);
     void do_authentication(QNetworkReply *, QAuthenticator *q);
@@ -35,6 +38,8 @@ private slots:
     void createEvent(QString user, QString calendar_name, QString summary, QDate start_date, QTime start_time, QTime end_time);
     void deleteEvent(QString user, QString pass, QString calendar_name, QString uid);
     void report_function(QNetworkReply* reply);
+    void createTODO(QString user, QString calendar_name, QString summary, QDateTime end_date);
+    void deleteTODO(QString user, QString pass, QString calendar_name, QString uid);
 
     QList<Event> getEventsOnDate(QDate date);
     void showEventsOnDate(QDate date);

@@ -28,20 +28,12 @@
 #include <chrono>
 #include <thread>
 
-/*class Event {
-  public:
-    std::string UID;
-    std::string summary;
-    QDateTime timestamp_start;
-    QDateTime timestamp_end;
-    QDateTime creation_date;
-};*/
-
 class Calendar {
   public:
     std::string name;
     std::string color;
     std::map<std::string, Event> events;
+    std::map<std::string, Todo> todos;
 };
 
 std::map<std::string, Calendar> calendars;
@@ -52,13 +44,17 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     ui->stackedWidget->setCurrentIndex(0);
-    ui -> success_create_event -> hide();
-    ui -> error_create_event -> hide();
+    ui->success_create_event -> hide();
+    ui->error_create_event -> hide();
 
     ui->selectedDate->setAlignment(Qt::Alignment(Qt::AlignHCenter));
     ui->selectedDate->setText("Select a day");
     ui->displayedCalendar->setSelectedDate(QDate::currentDate());
     ui->displayedCalendar->setSelectionMode(QCalendarWidget::SingleSelection);
+    ui->TODO_list->setSortingEnabled(true);
+    ui->TODO_list->sortItems(1, Qt::SortOrder::AscendingOrder);
+    ui->TODO_list->header()->resizeSection(0, 400);
+
     // TODO fix this connect, the slot is not called
     connect(ui->displayedCalendar, SIGNAL(QCalendarWidget::activated(QDate)),
                      this, SLOT(MainWindow::on_displayedCalendar_clicked(QDate)));
@@ -78,6 +74,7 @@ void MainWindow::on_loginButton_clicked() {
         ui->stackedWidget->setCurrentIndex(1);
         // TODO da implementare selezione calendario
         getAllEvents(login_user, password, "test-1");
+        getAllEvents(login_user, password, "test-todo");
     } else {
         // TODO inserire messaggio di errore se USER / PWD sbagliata
     }
@@ -102,7 +99,7 @@ QList<Event> MainWindow::getEventsOnDate(QDate date){
             Event e = ev.second;
             if (e.timestamp_start.date() == date ||
                     e.timestamp_end.date() == date){
-                //the event either starts or ends (or both) on the requested date
+                // the event either starts or ends (or both) on the requested date
                 toReturn.append(e);
             }
         }
@@ -139,6 +136,27 @@ void MainWindow::on_createEventButton_clicked() {
 
 }
 
+void MainWindow::on_createTodoButton_clicked()
+{
+
+    QString user = ui->username_login->text(); // UID evento di prova
+    QString summary = ui->todo_summary->toPlainText();
+    QDateTime dueDate = ui->todo_due->dateTime();
+
+    // TODO: aggiungere calendario
+    createTODO(user, "test-todo", summary, dueDate);
+
+}
+
+void MainWindow::on_deleteTodoButton_clicked()
+{
+
+    // TODO da finire
+
+}
+
+
+
 void MainWindow::on_getButton_clicked()
 {
 
@@ -146,23 +164,27 @@ void MainWindow::on_getButton_clicked()
     QString password = "progetto-pds";
     QString calendar_name = "test-1";
     QString uid = "20220619-1506-0011-0000-202206101306"; // UID evento di prova
-    QString summary = "ESAME PDS";
+    QString summary = "TEST TODO";
     QDate start_date(2022, 06, 10);
     QTime start_time(13, 30);
     QTime end_time(15,00);
 
+    QDateTime endDateTime(start_date, end_time);
+
     login(user.toStdString(), password.toStdString());
-    // createEvent(user, calendar_name, summary, start_date, start_time, end_time);
-    getAllEvents(user, password, calendar_name);
+    createTODO(user, calendar_name, summary, endDateTime);
+    // getAllEvents(user, password, calendar_name);
     // deleteEvent(user, password, calendar_name, uid);
 
 }
 
 void MainWindow::traduce(QString data) {
 
+    bool is_empty = false;
     std::string s = data.toStdString();
     std::string cal_data;
-    std::string delimiter = "\r\nBEGIN:VEVENT";
+    // std::string delimiter = "\r\nBEGIN:VEVENT";
+    std::string delimiter = "\r\nBEGIN:";
     std::vector<std::string> calendar_data;
     Calendar my_calendar;
 
@@ -177,8 +199,11 @@ void MainWindow::traduce(QString data) {
 
     // creazione calendario locale
 
-    if (calendar_data.empty()) {cal_data = data.toStdString();} // calendario con eventi
-    else {cal_data = calendar_data[0];} // calendario senza eventi
+    if (calendar_data.empty()) {
+        is_empty = true;
+        cal_data = data.toStdString();
+    } // calendario senza eventi
+    else {cal_data = calendar_data[0];} // calendario con eventi
     delimiter = "\r\n";
     std::vector<std::string> current_cal;
     size_t cal_pos = 0;
@@ -194,6 +219,8 @@ void MainWindow::traduce(QString data) {
     my_calendar.color = current_cal[5].substr(current_cal[5].find(":")).erase(0,1);
 
     // inserimento eventi calendario locale
+if(!is_empty) {
+    if(calendar_data.size()>1 && calendar_data[1].substr(0,4) == "VEVE") {
 
     for(int i=1; i<calendar_data.size(); i++) {
 
@@ -220,7 +247,44 @@ void MainWindow::traduce(QString data) {
         my_event.timestamp_end = QDateTime::fromString(ts_en,"yyyyMMddTHHmmss");
         my_event.creation_date = QDateTime::fromString(ts_da,"yyyyMMddTHHmmssZ");
         my_calendar.events[my_event.UID.toStdString()] = my_event;
+
+    }} else if(calendar_data.size()>1 && calendar_data[1].substr(0,4) == "VTOD") {
+
+        for(int i=1; i<calendar_data.size(); i++) {
+
+            Todo my_todo;
+            std::string s = calendar_data[i];
+            std::vector<std::string> current_todo;
+
+            size_t pos = 0;
+            std::string token;
+            while ((pos = s.find(delimiter)) != std::string::npos) {
+                token = s.substr(0, pos);
+                s.erase(0, pos + delimiter.length());
+                current_todo.push_back(token);
+                std::cout << token << std::endl;
+            }
+
+            QString ts_due = QString::fromStdString(current_todo[3].substr(current_todo[3].find(":")).erase(0,1));
+            QString ts_tst = QString::fromStdString(current_todo[4].substr(current_todo[4].find(":")).erase(0,1));
+
+            my_todo.UID = QString::fromStdString(current_todo[1].substr(current_todo[1].find(":")).erase(0,1));
+            my_todo.summary = QString::fromStdString(current_todo[2].substr(current_todo[2].find(":")).erase(0,1));
+            my_todo.due_to = QDateTime::fromString(ts_due,"yyyyMMdd");
+            my_todo.creation_date = QDateTime::fromString(ts_tst,"yyyyMMddTHHmmss");
+            my_calendar.todos[my_todo.UID.toStdString()] = my_todo;
+
+            // Putting task on TODO
+
+            QTreeWidgetItem *newItem = new QTreeWidgetItem();
+            newItem->setText(0,my_todo.summary);
+            newItem->setText(1,my_todo.due_to.toString("yyyy-MM-dd"));
+            newItem->setText(2,my_todo.UID);
+            ui->TODO_list->addTopLevelItem(newItem);
     }
+
+    }
+}
 
     calendars[my_calendar.name] = my_calendar;
 
@@ -294,6 +358,7 @@ void MainWindow::report_getAllEvents(QNetworkReply* reply) {
     if (reply->error() == QNetworkReply::NoError) {
         QString strReply = (QString)reply->readAll();
         qDebug() << "[Getting all events]";
+        qDebug() << strReply;
         traduce(strReply);
     }
     else {
@@ -331,6 +396,38 @@ void MainWindow::deleteEvent(QString user, QString pass, QString calendar_name, 
     // Elimino evento localmente
 
     calendars[calendar_name.toStdString()].events.erase(uid.toStdString());
+
+}
+
+void MainWindow::deleteTODO(QString user, QString pass, QString calendar_name, QString uid) {
+
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
+    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
+    connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
+
+    QString concatenated = user + ":" + pass;
+    QByteArray user_pass = concatenated.toLocal8Bit().toBase64();
+    QString header = "Basic " + user_pass;
+    QString filename = uid + ".ics";
+    QString baseUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/" + user + "/" + calendar_name + "/";
+
+    QNetworkRequest request;
+    request.setUrl(QUrl(baseUrl + filename));
+    request.setRawHeader("User-Agent", "CalendarClient_CalDAV");
+    request.setRawHeader("Authorization", header.toUtf8());
+    request.setRawHeader("Depth", "0");
+    request.setRawHeader("Prefer", "return-minimal");
+    request.setRawHeader("Content-Type", "text/calendar; charset=utf-8");
+    request.setRawHeader("Content-Length", 0);
+
+    qDebug() << "Deleting" << request.url();
+    QNetworkReply *reply = manager->deleteResource(request);
+    QString response = reply->readAll();
+    qDebug() << "[Deleting Event] " << reply;
+
+    // Elimino evento localmente
+
+    calendars[calendar_name.toStdString()].todos.erase(uid.toStdString());
 
 }
 
@@ -380,6 +477,58 @@ void MainWindow::createEvent(QString user, QString calendar_name, QString summar
 
 }
 
+void MainWindow::createTODO(QString user, QString calendar_name, QString summary, QDateTime end_date) {
+
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
+    QDateTime current_datetime = QDateTime::currentDateTime();
+    QString uid = current_datetime.toString("yyyyMMdd-HHMM-00ss"); + "-0000-" + end_date.toString("yyyyMMddHHMM");
+
+    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
+    connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
+
+    QNetworkRequest request;
+
+    QString myUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/" + user + "/" + calendar_name + "/" + uid + ".ics";
+    request.setUrl(QUrl(myUrl));
+    request.setRawHeader("Depth", "1");
+    request.setRawHeader("Prefer", "return-minimal");
+    request.setRawHeader("If-None-Match", "*");
+    request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
+
+    QString request_report = "BEGIN:VCALENDAR\n"
+            "BEGIN:VTODO\n"
+            "UID:" + uid + "\n"
+            "SUMMARY:" + summary + "\n"
+            "DUE;VALUE=DATE:" + end_date.toString("yyyyMMdd") + "\n"
+            "DTSTAMP:" + current_datetime.toString("yyyyMMddTHHmmssZ") + "\n"
+            "END:VTODO\n"
+            "END:VCALENDAR\n";
+
+    QByteArray converted_report = request_report.toUtf8();
+
+    QNetworkReply *reply = manager->put(request, converted_report);
+    QString response = reply->readAll();
+    qDebug() << "[Add Event] " << reply;
+
+    // Aggiungo todo localmente
+
+    Todo my_todo;
+    my_todo.UID = uid;
+    my_todo.summary = summary;
+    my_todo.due_to = end_date;
+    my_todo.creation_date = current_datetime;
+
+    calendars[calendar_name.toStdString()].todos[uid.toStdString()] = my_todo;
+
+    // Putting task on TODO
+
+    QTreeWidgetItem *newItem = new QTreeWidgetItem();
+    newItem->setText(0,my_todo.summary);
+    newItem->setText(1,my_todo.due_to.toString("yyyy-MM-dd"));
+    newItem->setText(2,my_todo.UID);
+    ui->TODO_list->addTopLevelItem(newItem);
+
+}
 
 void MainWindow::report_function(QNetworkReply* reply) {
 
