@@ -30,7 +30,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="page">
      <widget class="QLineEdit" name="password_login">
@@ -132,7 +132,7 @@
        </rect>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="Calendario">
        <attribute name="title">
@@ -332,63 +332,40 @@ padding-left: 5px;</string>
          </rect>
         </property>
         <property name="text">
-         <string>Titolo</string>
+         <string>Title</string>
         </property>
        </widget>
-       <widget class="QDateEdit" name="start_date">
+       <widget class="QDateTimeEdit" name="start_date_time">
         <property name="geometry">
          <rect>
           <x>100</x>
           <y>60</y>
-          <width>110</width>
+          <width>161</width>
           <height>25</height>
          </rect>
         </property>
        </widget>
-       <widget class="QTimeEdit" name="start_time">
+       <widget class="QDateTimeEdit" name="end_date_time">
         <property name="geometry">
          <rect>
-          <x>270</x>
+          <x>377</x>
           <y>60</y>
-          <width>118</width>
+          <width>191</width>
           <height>25</height>
          </rect>
-        </property>
-       </widget>
-       <widget class="QTimeEdit" name="end_time">
-        <property name="geometry">
-         <rect>
-          <x>450</x>
-          <y>60</y>
-          <width>118</width>
-          <height>25</height>
-         </rect>
-        </property>
-       </widget>
-       <widget class="QLabel" name="label">
-        <property name="geometry">
-         <rect>
-          <x>230</x>
-          <y>60</y>
-          <width>101</width>
-          <height>24</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Inizio</string>
         </property>
        </widget>
        <widget class="QLabel" name="label_10">
         <property name="geometry">
          <rect>
-          <x>410</x>
+          <x>340</x>
           <y>60</y>
-          <width>101</width>
+          <width>91</width>
           <height>24</height>
          </rect>
         </property>
         <property name="text">
-         <string>Fine</string>
+         <string>End</string>
         </property>
        </widget>
        <widget class="QPushButton" name="createEventButton">
@@ -401,7 +378,7 @@ padding-left: 5px;</string>
          </rect>
         </property>
         <property name="text">
-         <string>Crea Evento</string>
+         <string>Create Event</string>
         </property>
        </widget>
        <widget class="QLabel" name="label_11">
@@ -414,7 +391,7 @@ padding-left: 5px;</string>
          </rect>
         </property>
         <property name="text">
-         <string>Data</string>
+         <string>Start</string>
         </property>
        </widget>
        <widget class="QLabel" name="error_create_event">
@@ -549,7 +526,7 @@ color: rgb(255, 255, 255);</string>
         </rect>
        </property>
       </widget>
-      <widget class="QPushButton" name="confirmButton">
+      <widget class="QPushButton" name="confirmEditButton">
        <property name="geometry">
         <rect>
          <x>450</x>
@@ -566,7 +543,7 @@ border-color: rgb(0, 85, 255);</string>
         <string>Confirm</string>
        </property>
       </widget>
-      <widget class="QPushButton" name="cancelButton">
+      <widget class="QPushButton" name="cancelEditButton">
        <property name="geometry">
         <rect>
          <x>20</x>
@@ -582,7 +559,7 @@ border-color: rgb(0, 85, 255);</string>
         <string>Cancel</string>
        </property>
       </widget>
-      <widget class="QPushButton" name="closeButton">
+      <widget class="QPushButton" name="closeEditButton">
        <property name="geometry">
         <rect>
          <x>230</x>
@@ -641,9 +618,9 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
       <zorder>endLabel</zorder>
       <zorder>startDateTimeEdit</zorder>
       <zorder>endDateTimeEdit</zorder>
-      <zorder>confirmButton</zorder>
-      <zorder>cancelButton</zorder>
-      <zorder>closeButton</zorder>
+      <zorder>confirmEditButton</zorder>
+      <zorder>cancelEditButton</zorder>
+      <zorder>closeEditButton</zorder>
      </widget>
     </widget>
     <widget class="QWidget" name="page_4">

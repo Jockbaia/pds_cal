@@ -27,6 +27,8 @@ set(PROJECT_SOURCES
         event.cpp
         todo.h
         todo.cpp
+        calendar.h
+        calendar.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

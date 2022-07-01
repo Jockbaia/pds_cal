@@ -28,13 +28,13 @@
 #include <chrono>
 #include <thread>
 
-class Calendar {
+/*class Calendar {
   public:
     std::string name;
     std::string color;
     std::map<std::string, Event> events;
     std::map<std::string, Todo> todos;
-};
+};*/
 
 std::map<std::string, Calendar> calendars;
 
@@ -127,17 +127,16 @@ void MainWindow::on_createEventButton_clicked() {
 
     QString user = ui->username_login->text();
     QString summary = ui-> event_title -> toPlainText();
-    QDate start_date = ui -> start_date -> date();
-    QTime start_time = ui -> start_time -> time();
-    QTime end_time = ui -> end_time -> time();
+    QDateTime startDateTime = ui -> start_date_time -> dateTime();
+    QDateTime endDateTime = ui -> end_date_time -> dateTime();
 
     // TODO: Inserire selezione calendario
 
-    if (summary.isEmpty() || start_time > end_time) {
+    if (summary.isEmpty() || startDateTime > endDateTime) {
         ui -> success_create_event -> hide();
         ui -> error_create_event -> show();
     } else {
-        createEvent(user, "test-1", summary, start_date, start_time, end_time);
+        createEvent(user, "test-1", summary, startDateTime, endDateTime);
         ui -> success_create_event -> show();
         ui -> error_create_event -> hide();
     }
@@ -226,36 +225,38 @@ void MainWindow::traduce(QString data) {
     my_calendar.color = current_cal[5].substr(current_cal[5].find(":")).erase(0,1);
 
     // inserimento eventi calendario locale
-if(!is_empty) {
-    if(calendar_data.size()>1 && calendar_data[1].substr(0,4) == "VEVE") {
+    if(!is_empty) {
+        if(calendar_data.size()>1 && calendar_data[1].substr(0,4) == "VEVE") {
 
-    for(int i=1; i<calendar_data.size(); i++) {
+            for(int i=1; i<calendar_data.size(); i++) {
 
-        Event my_event;
-        std::string s = calendar_data[i];
-        std::vector<std::string> current_event;
+                Event my_event;
+                std::string s = calendar_data[i];
+                std::vector<std::string> current_event;
 
-        size_t pos = 0;
-        std::string token;
-        while ((pos = s.find(delimiter)) != std::string::npos) {
-            token = s.substr(0, pos);
-            s.erase(0, pos + delimiter.length());
-            current_event.push_back(token);
-            std::cout << token << std::endl;
+                size_t pos = 0;
+                std::string token;
+                while ((pos = s.find(delimiter)) != std::string::npos) {
+                    token = s.substr(0, pos);
+                    s.erase(0, pos + delimiter.length());
+                    current_event.push_back(token);
+                    std::cout << token << std::endl;
+                }
+
+            QString ts_st = QString::fromStdString(current_event[3].substr(current_event[3].find(":")).erase(0,1));
+            QString ts_en = QString::fromStdString(current_event[4].substr(current_event[4].find(":")).erase(0,1));
+            QString ts_da = QString::fromStdString(current_event[5].substr(current_event[5].find(":")).erase(0,1));
+
+            my_event.UID = QString::fromStdString(current_event[1].substr(current_event[1].find(":")).erase(0,1));
+            my_event.summary = QString::fromStdString(current_event[2].substr(current_event[2].find(":")).erase(0,1));
+            my_event.timestamp_start = QDateTime::fromString(ts_st,"yyyyMMddTHHmmss");
+            my_event.timestamp_end = QDateTime::fromString(ts_en,"yyyyMMddTHHmmss");
+            my_event.creation_date = QDateTime::fromString(ts_da,"yyyyMMddTHHmmssZ");
+            my_calendar.events[my_event.UID.toStdString()] = my_event;
+
+            }
         }
-
-        QString ts_st = QString::fromStdString(current_event[3].substr(current_event[3].find(":")).erase(0,1));
-        QString ts_en = QString::fromStdString(current_event[4].substr(current_event[4].find(":")).erase(0,1));
-        QString ts_da = QString::fromStdString(current_event[5].substr(current_event[5].find(":")).erase(0,1));
-
-        my_event.UID = QString::fromStdString(current_event[1].substr(current_event[1].find(":")).erase(0,1));
-        my_event.summary = QString::fromStdString(current_event[2].substr(current_event[2].find(":")).erase(0,1));
-        my_event.timestamp_start = QDateTime::fromString(ts_st,"yyyyMMddTHHmmss");
-        my_event.timestamp_end = QDateTime::fromString(ts_en,"yyyyMMddTHHmmss");
-        my_event.creation_date = QDateTime::fromString(ts_da,"yyyyMMddTHHmmssZ");
-        my_calendar.events[my_event.UID.toStdString()] = my_event;
-
-    }} else if(calendar_data.size()>1 && calendar_data[1].substr(0,4) == "VTOD") {
+        else if(calendar_data.size()>1 && calendar_data[1].substr(0,4) == "VTOD") {
 
         for(int i=1; i<calendar_data.size(); i++) {
 
@@ -397,7 +398,7 @@ void MainWindow::deleteEvent(QString user, QString pass, QString calendar_name, 
 
     qDebug() << "Deleting" << request.url();
     QNetworkReply *reply = manager->deleteResource(request);
-    QString response = reply->readAll();
+    // QString response = reply->readAll();
     qDebug() << "[Deleting Event] " << reply;
 
     // Elimino evento localmente
@@ -438,12 +439,10 @@ void MainWindow::deleteTODO(QString user, QString pass, QString calendar_name, Q
 
 }
 
-void MainWindow::createEvent(QString user, QString calendar_name, QString summary, QDate start_date, QTime start_time, QTime end_time) {
+void MainWindow::createEvent(QString user, QString calendar_name, QString summary, QDateTime start_date_time, QDateTime end_date_time) {
 
     QNetworkAccessManager *manager = new QNetworkAccessManager();
-    QDateTime endDateTime(start_date, end_time);
-    QDateTime startDateTime(start_date, start_time);
-    QString uid = QDateTime::currentDateTime().toString("yyyyMMdd-HHMM-00ss") + "-0000-" + startDateTime.toString("yyyyMMddHHMM");
+    QString uid = QDateTime::currentDateTime().toString("yyyyMMdd-HHMM-00ss") + "-0000-" + start_date_time.toString("yyyyMMddHHMM");
 
     connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
@@ -461,8 +460,8 @@ void MainWindow::createEvent(QString user, QString calendar_name, QString summar
             "BEGIN:VEVENT\n"
             "UID:" + uid + "\n"
             "SUMMARY:" + summary + "\n"
-            "DTSTART:" + startDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
-            "DTEND:" + endDateTime.toString("yyyyMMddTHHmmss") + "\r\n"
+            "DTSTART:" + start_date_time.toString("yyyyMMddTHHmmss") + "\r\n"
+            "DTEND:" + end_date_time.toString("yyyyMMddTHHmmss") + "\r\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
 
@@ -477,8 +476,8 @@ void MainWindow::createEvent(QString user, QString calendar_name, QString summar
     Event my_event;
     my_event.UID = uid;
     my_event.summary = summary;
-    my_event.timestamp_start = startDateTime;
-    my_event.timestamp_end = endDateTime;
+    my_event.timestamp_start = start_date_time;
+    my_event.timestamp_end = end_date_time;
 
     calendars[calendar_name.toStdString()].events[uid.toStdString()] = my_event;
 
@@ -550,7 +549,45 @@ void MainWindow::report_function(QNetworkReply* reply) {
     }
 }
 
+void MainWindow::editEvent(QString user, QString uid, QString calendar_name, QString summary, QDateTime start_date_time, QDateTime end_date_time) {
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
 
+    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
+    connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
+
+    QNetworkRequest request;
+
+    QString myUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/" + user + "/" + calendar_name + "/" + uid + ".ics";
+    request.setUrl(QUrl(myUrl));
+    request.setRawHeader("Depth", "1");
+    request.setRawHeader("Prefer", "return-minimal");
+    // request.setRawHeader("If-None-Match", "*");
+    request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
+
+    QString request_report = "BEGIN:VCALENDAR\n"
+            "BEGIN:VEVENT\n"
+            "UID:" + uid + "\n"
+            "SUMMARY:" + summary + "\n"
+            "DTSTART:" + start_date_time.toString("yyyyMMddTHHmmss") + "\r\n"
+            "DTEND:" + end_date_time.toString("yyyyMMddTHHmmss") + "\r\n"
+            "END:VEVENT\n"
+            "END:VCALENDAR\n";
+
+    QByteArray converted_report = request_report.toUtf8();
+
+    QNetworkReply *reply = manager->put(request, converted_report);
+    QString response = reply->readAll();
+    qDebug() << "[Edit Event] " << reply;
+
+    // Modify event locally
+    Event *e = &calendars[calendar_name.toStdString()].events[uid.toStdString()];
+
+    e->UID = uid;
+    e->summary = summary;
+    e->timestamp_start = start_date_time;
+    e->timestamp_end = end_date_time;
+    e->cal_ptr = &calendars[calendar_name.toStdString()];
+}
 
 void MainWindow::on_displayedCalendar_clicked(const QDate &date)
 {
@@ -564,7 +601,7 @@ void MainWindow::on_editButton_clicked()
 }
 
 
-void MainWindow::on_closeButton_clicked()
+void MainWindow::on_closeEditButton_clicked()
 {
     ui->stackedWidget->setCurrentIndex(1);
     ui->errorEdit->hide();
@@ -572,7 +609,7 @@ void MainWindow::on_closeButton_clicked()
 }
 
 
-void MainWindow::on_confirmButton_clicked()
+void MainWindow::on_confirmEditButton_clicked()
 {
     if (ui->listOfEvents->currentItem() == nullptr){
         // If no event is selected, show error message
@@ -584,10 +621,7 @@ void MainWindow::on_confirmButton_clicked()
     QString user = ui->username_login->text();
     QString summary = ui->titleEdit->text();
     QDateTime start_date_time = ui->startDateTimeEdit->dateTime();
-    QDate start_date = start_date_time.date();
-    QTime start_time = start_date_time.time();
     QDateTime end_date_time = ui->endDateTimeEdit->dateTime();
-    QTime end_time = end_date_time.time();
 
     // Get uid from selected event in list
     QString event_data = ui->listOfEvents->currentItem()->text();
@@ -603,12 +637,11 @@ void MainWindow::on_confirmButton_clicked()
 
     // TODO: Inserire selezione calendario
 
-    if (summary.isEmpty() || start_time > end_time) {
+    if (summary.isEmpty() || start_date_time > end_date_time) {
         ui -> successEdit -> hide();
         ui -> errorEdit -> show();
     } else {
-        // createEvent(user, "test-1", summary, start_date, start_time, end_time);
-        // TODO: editEvent(user, "test-1", uid, summary, start_date, start_time, end_time);
+        editEvent(user, uid, "test-1", summary, start_date_time, end_date_time);
         ui -> successEdit -> show();
         ui -> errorEdit -> hide();
     }
@@ -616,7 +649,7 @@ void MainWindow::on_confirmButton_clicked()
 }
 
 
-void MainWindow::on_cancelButton_clicked()
+void MainWindow::on_cancelEditButton_clicked()
 {
     ui->stackedWidget->setCurrentIndex(1);
     ui->errorEdit->hide();
