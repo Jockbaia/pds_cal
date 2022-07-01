@@ -28,14 +28,6 @@
 #include <chrono>
 #include <thread>
 
-/*class Calendar {
-  public:
-    std::string name;
-    std::string color;
-    std::map<std::string, Event> events;
-    std::map<std::string, Todo> todos;
-};*/
-
 std::map<std::string, Calendar> calendars;
 
 MainWindow::MainWindow(QWidget *parent)
@@ -76,9 +68,7 @@ void MainWindow::on_loginButton_clicked() {
 
     if (login(login_user.toStdString(), password.toStdString())) {
         ui->stackedWidget->setCurrentIndex(1);
-        // TODO da implementare selezione calendario
-        getAllEvents(login_user, password, "test-1");
-        getAllEvents(login_user, password, "test-todo");
+        get_calendars(login_user.toStdString(), password.toStdString());
     } else {
         // TODO inserire messaggio di errore se USER / PWD sbagliata
     }
@@ -136,7 +126,7 @@ void MainWindow::on_createEventButton_clicked() {
         ui -> success_create_event -> hide();
         ui -> error_create_event -> show();
     } else {
-        createEvent(user, "test-1", summary, startDateTime, endDateTime);
+        createEvent(user, ui->vevent_list->currentText(), summary, startDateTime, endDateTime);
         ui -> success_create_event -> show();
         ui -> error_create_event -> hide();
     }
@@ -149,9 +139,7 @@ void MainWindow::on_createTodoButton_clicked()
     QString user = ui->username_login->text(); // UID evento di prova
     QString summary = ui->todo_summary->toPlainText();
     QDateTime dueDate = ui->todo_due->dateTime();
-
-    // TODO: aggiungere calendario
-    createTODO(user, "test-todo", summary, dueDate);
+    createTODO(user, ui->vtodo_list->currentText(), summary, dueDate);
 
 }
 
@@ -184,7 +172,7 @@ void MainWindow::on_getButton_clicked()
 
 }
 
-void MainWindow::traduce(QString data) {
+void MainWindow::parse_vcalendar(QString data) {
 
     bool is_empty = false;
     std::string s = data.toStdString();
@@ -192,7 +180,7 @@ void MainWindow::traduce(QString data) {
     // std::string delimiter = "\r\nBEGIN:VEVENT";
     std::string delimiter = "\r\nBEGIN:";
     std::vector<std::string> calendar_data;
-    Calendar my_calendar;
+    // Calendar my_calendar;
 
     size_t pos = 0;
     std::string token;
@@ -221,10 +209,11 @@ void MainWindow::traduce(QString data) {
             current_cal.push_back(cal_token);
     }
 
-    my_calendar.name = current_cal[4].substr(current_cal[4].find(":")).erase(0,1);
-    my_calendar.color = current_cal[5].substr(current_cal[5].find(":")).erase(0,1);
+    std::string cal_name = current_cal[4].substr(current_cal[4].find(":")).erase(0,1);
+    std::string cal_color = current_cal[5].substr(current_cal[5].find(":")).erase(0,1);
 
     // inserimento eventi calendario locale
+
     if(!is_empty) {
         if(calendar_data.size()>1 && calendar_data[1].substr(0,4) == "VEVE") {
 
@@ -252,11 +241,14 @@ void MainWindow::traduce(QString data) {
             my_event.timestamp_start = QDateTime::fromString(ts_st,"yyyyMMddTHHmmss");
             my_event.timestamp_end = QDateTime::fromString(ts_en,"yyyyMMddTHHmmss");
             my_event.creation_date = QDateTime::fromString(ts_da,"yyyyMMddTHHmmssZ");
-            my_calendar.events[my_event.UID.toStdString()] = my_event;
+
+            calendars[cal_name].events[my_event.UID.toStdString()] = my_event;
 
             }
         }
         else if(calendar_data.size()>1 && calendar_data[1].substr(0,4) == "VTOD") {
+
+            calendars[cal_name].is_todo = true;
 
         for(int i=1; i<calendar_data.size(); i++) {
 
@@ -280,21 +272,98 @@ void MainWindow::traduce(QString data) {
             my_todo.summary = QString::fromStdString(current_todo[2].substr(current_todo[2].find(":")).erase(0,1));
             my_todo.due_to = QDateTime::fromString(ts_due,"yyyyMMdd");
             my_todo.creation_date = QDateTime::fromString(ts_tst,"yyyyMMddTHHmmss");
-            my_calendar.todos[my_todo.UID.toStdString()] = my_todo;
+
+            calendars[cal_name].todos[my_todo.UID.toStdString()] = my_todo;
 
             // Putting task on TODO
 
             QTreeWidgetItem *newItem = new QTreeWidgetItem();
             newItem->setText(0,my_todo.summary);
             newItem->setText(1,my_todo.due_to.toString("yyyy-MM-dd"));
-            newItem->setText(2,my_todo.UID);
+            newItem->setText(2,QString::fromStdString(cal_name));
+            newItem->setText(3,my_todo.UID);
             ui->TODO_list->addTopLevelItem(newItem);
     }
 
     }
 }
 
-    calendars[my_calendar.name] = my_calendar;
+    calendars[cal_name].color = cal_color;
+    calendars[cal_name].is_shown = true;
+
+    // Putting calendar in list
+
+    QTreeWidgetItem *newItem = new QTreeWidgetItem();
+    newItem->setText(0,QString::fromStdString(cal_name));
+    if(calendars[cal_name].is_todo) {
+        newItem->setText(1,"Tasks");
+        ui->vtodo_list->addItem(QString::fromStdString(cal_name));
+    } else {
+        newItem->setText(1,"Calendar");
+        ui->vevent_list->addItem(QString::fromStdString(cal_name));
+    }
+    if(calendars[cal_name].is_shown) newItem->setText(2,"Show");
+    else newItem->setText(2,"Hide");
+    ui->cal_list->addTopLevelItem(newItem);
+
+}
+
+void MainWindow::parse_request(QString data) {
+
+    bool is_empty = false;
+    std::string s = data.toStdString();
+    std::string cal_data;
+    std::string delimiter = "<d:response>";
+    std::vector<std::string> request_data;
+    Calendar my_calendar;
+
+    size_t pos = 0;
+    std::string token;
+    while ((pos = s.find(delimiter)) != std::string::npos) {
+        token = s.substr(0, pos);
+
+        s.erase(0, pos + delimiter.length());
+        request_data.push_back(token);
+    }
+
+    for(int i=2; i<request_data.size(); i++) { // i=1 -> skip header
+
+        std::cout << request_data[i] << std::endl;
+
+        // display_name
+        unsigned first = request_data[i].find("<d:displayname>");
+        unsigned end_first = first + 15;
+        unsigned last = request_data[i].find("</d:displayname>");
+        std::string display_name = request_data[i].substr(end_first,last - end_first);
+
+        // c_tag
+        first = request_data[i].find("<cs:getctag>");
+        end_first = first + 12;
+        last = request_data[i].find("</cs:getctag>");
+        std::string ctag = request_data[i].substr(end_first,last - end_first);
+
+        // calendar_name
+        first = request_data[i].find("<d:href>/remote.php/dav/calendars/");
+        end_first = first + 34;
+        last = request_data[i].find("/</d:href>");
+        std::string user_plus_cal = request_data[i].substr(end_first,last - end_first);
+
+        first = user_plus_cal.find("/");
+        end_first = first + 1;
+        last = user_plus_cal.length();
+        std::string calendar_name = user_plus_cal.substr(end_first,last - end_first);
+
+        if(calendar_name != "inbox" && calendar_name != "outbox") { // disable nextcloud inbox/outbox
+            my_calendar.display_name = display_name;
+            my_calendar.ctag = ctag;
+            my_calendar.name = calendar_name;
+            calendars[calendar_name] = my_calendar;
+            getAllEvents(ui->username_login->text(), ui->password_login->text(), QString::fromStdString(calendar_name));
+        }
+
+    }
+
+
 
 }
 
@@ -327,10 +396,57 @@ bool MainWindow::login(std::string usr, std::string pwd) {
 
 }
 
+bool MainWindow::get_calendars(std::string usr, std::string pwd) {
+    QString _usr = QString::fromStdString(usr);
+    QString _pwd = QString::fromStdString(pwd);
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
+
+    connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(getCalendars_slot(QNetworkReply*)));
+    connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
+
+    QNetworkRequest request;
+
+    std::string myUrl_string = "https://cloud.mackers.dev/remote.php/dav/calendars/" + usr ;
+    QString my_qurl = QString::fromStdString(myUrl_string);
+
+    request.setUrl(QUrl(my_qurl));
+    request.setRawHeader("Depth", "1");
+    request.setRawHeader("Prefer", "return-minimal");
+    request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
+
+    QByteArray req_propfind = "<d:propfind xmlns:d=\"DAV:\" xmlns:cs=\"http://calendarserver.org/ns/\" xmlns:c=\"urn:ietf:params:icsText:ns:caldav\">\n"
+                              "  <d:prop>\n"
+                              "     <d:resourcetype />\n"
+                              "     <d:displayname />\n"
+                              "     <cs:getctag />\n"
+                              "     <c:supported-calendar-component-set />\n"
+                              "  </d:prop>\n"
+                              "</d:propfind>";
+
+    QNetworkReply *reply = manager->sendCustomRequest(request,"PROPFIND", req_propfind);
+    QString response = reply->readAll();
+    qDebug() << "[Login] " << reply;
+
+    return true;
+
+}
+
 void MainWindow::login_slot(QNetworkReply* reply) {
     if (reply->error() == QNetworkReply::NoError) {
         qDebug() << "[Logged]";
         QString strReply = (QString)reply->readAll();
+    }
+    else {
+        qDebug() << "[Failure]" << reply -> errorString();
+        delete reply;
+    }
+}
+
+void MainWindow::getCalendars_slot(QNetworkReply* reply) {
+    if (reply->error() == QNetworkReply::NoError) {
+        qDebug() << "[Logged]";
+        QString strReply = (QString)reply->readAll();
+        parse_request(strReply);
     }
     else {
         qDebug() << "[Failure]" << reply -> errorString();
@@ -367,7 +483,7 @@ void MainWindow::report_getAllEvents(QNetworkReply* reply) {
         QString strReply = (QString)reply->readAll();
         qDebug() << "[Getting all events]";
         qDebug() << strReply;
-        traduce(strReply);
+        parse_vcalendar(strReply);
     }
     else {
         qDebug() << "[Failure]" << reply->errorString();
@@ -531,7 +647,8 @@ void MainWindow::createTODO(QString user, QString calendar_name, QString summary
     QTreeWidgetItem *newItem = new QTreeWidgetItem();
     newItem->setText(0,my_todo.summary);
     newItem->setText(1,my_todo.due_to.toString("yyyy-MM-dd"));
-    newItem->setText(2,my_todo.UID);
+    newItem->setText(2,calendar_name);
+    newItem->setText(3, my_todo.UID);
     ui->TODO_list->addTopLevelItem(newItem);
 
 }
@@ -641,7 +758,7 @@ void MainWindow::on_confirmEditButton_clicked()
         ui -> successEdit -> hide();
         ui -> errorEdit -> show();
     } else {
-        editEvent(user, uid, "test-1", summary, start_date_time, end_date_time);
+        editEvent(user, uid, "personal", summary, start_date_time, end_date_time);
         ui -> successEdit -> show();
         ui -> errorEdit -> hide();
     }
@@ -696,7 +813,7 @@ void MainWindow::on_confirmDelete_clicked()
 
 
     // TODO: Inserire selezione calendario
-    deleteEvent(user, password, "test-1", uid);
+    deleteEvent(user, password, "personal", uid);
     ui -> successDelete -> show();
     ui -> errorDelete -> hide();
 

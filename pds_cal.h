@@ -24,14 +24,17 @@ public:
 
 private slots:
 
-    void traduce(QString data);
+    void parse_vcalendar(QString data);
+    void parse_request(QString data);
     void on_getButton_clicked();
     void on_loginButton_clicked();
     void on_createEventButton_clicked();
     void on_createTodoButton_clicked();
     void on_deleteTodoButton_clicked();
     bool login(std::string usr, std::string pwd);
+    bool get_calendars(std::string usr, std::string pwd);
     void login_slot(QNetworkReply* reply);
+    void getCalendars_slot(QNetworkReply* reply);
     void do_authentication(QNetworkReply *, QAuthenticator *q);
 
     void getAllEvents(QString user, QString pass, QString calendar_name);

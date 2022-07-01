@@ -17,7 +17,11 @@ public:
 
 
     std::string name;
+    std::string display_name;
     std::string color;
+    std::string ctag;
+    bool is_shown; // show calendar in GUI
+    bool is_todo; // flag calendar as task list
     std::map<std::string, Event> events;
     std::map<std::string, Todo> todos;
 
