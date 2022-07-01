@@ -50,12 +50,16 @@ MainWindow::MainWindow(QWidget *parent)
     ui->selectedDate->setAlignment(Qt::Alignment(Qt::AlignHCenter));
     ui->selectedDate->setText("Select a day");
     ui->displayedCalendar->setSelectedDate(QDate::currentDate());
-    ui->displayedCalendar->setSelectionMode(QCalendarWidget::SingleSelection);
+
     ui->TODO_list->setSortingEnabled(true);
     ui->TODO_list->sortItems(1, Qt::SortOrder::AscendingOrder);
     ui->TODO_list->header()->resizeSection(0, 400);
 
-    // TODO fix this connect, the slot is not called
+    ui->successEdit->hide();
+    ui->errorEdit->hide();
+    ui->successDelete->hide();
+    ui->errorDelete->hide();
+
     connect(ui->displayedCalendar, SIGNAL(QCalendarWidget::activated(QDate)),
                      this, SLOT(MainWindow::on_displayedCalendar_clicked(QDate)));
 }
@@ -82,12 +86,16 @@ void MainWindow::on_loginButton_clicked() {
 
 void MainWindow::showEventsOnDate(QDate date){
     ui->selectedDate->setText(date.toString());
-    QString toShow = eventsListToString(getEventsOnDate(date));
-    if (toShow.isEmpty()){
-        ui->eventsList->setPlainText("No events to show for this date");
+    ui->listOfEvents->clear();
+    QList<Event> toShow = getEventsOnDate(date);
+    /*if (toShow.isEmpty()){
+        // ui->eventsList->setPlainText("No events to show for this date");
         return;
+    }*/
+    for (Event e : toShow){
+        ui->listOfEvents->addItem(e.toString());
     }
-    ui->eventsList->setPlainText(toShow);
+    // ui->eventsList->setPlainText(toShow);
     //ui->eventsList->insertPlainText(eventsListToString(getEventsOnDate(date)));
 }
 
@@ -154,7 +162,6 @@ void MainWindow::on_deleteTodoButton_clicked()
     // TODO da finire
 
 }
-
 
 
 void MainWindow::on_getButton_clicked()
@@ -548,5 +555,117 @@ void MainWindow::report_function(QNetworkReply* reply) {
 void MainWindow::on_displayedCalendar_clicked(const QDate &date)
 {
     showEventsOnDate(date);
+}
+
+
+void MainWindow::on_editButton_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(2);
+}
+
+
+void MainWindow::on_closeButton_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(1);
+    ui->errorEdit->hide();
+    ui->successEdit->hide();
+}
+
+
+void MainWindow::on_confirmButton_clicked()
+{
+    if (ui->listOfEvents->currentItem() == nullptr){
+        // If no event is selected, show error message
+        ui->errorEdit->show();
+        ui->successEdit->hide();
+        return;
+    }
+
+    QString user = ui->username_login->text();
+    QString summary = ui->titleEdit->text();
+    QDateTime start_date_time = ui->startDateTimeEdit->dateTime();
+    QDate start_date = start_date_time.date();
+    QTime start_time = start_date_time.time();
+    QDateTime end_date_time = ui->endDateTimeEdit->dateTime();
+    QTime end_time = end_date_time.time();
+
+    // Get uid from selected event in list
+    QString event_data = ui->listOfEvents->currentItem()->text();
+    std::string s = event_data.toStdString();
+    std::string delimiter = "UID: ";
+    size_t pos = 0;
+    while ((pos = s.find(delimiter)) != std::string::npos) {
+        s.erase(0, pos + delimiter.length());
+    }
+    s.erase(s.length() - 1); // erase \n ?
+    QString uid = QString::fromStdString(s);
+
+
+    // TODO: Inserire selezione calendario
+
+    if (summary.isEmpty() || start_time > end_time) {
+        ui -> successEdit -> hide();
+        ui -> errorEdit -> show();
+    } else {
+        // createEvent(user, "test-1", summary, start_date, start_time, end_time);
+        // TODO: editEvent(user, "test-1", uid, summary, start_date, start_time, end_time);
+        ui -> successEdit -> show();
+        ui -> errorEdit -> hide();
+    }
+
+}
+
+
+void MainWindow::on_cancelButton_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(1);
+    ui->errorEdit->hide();
+    ui->successEdit->hide();
+}
+
+
+void MainWindow::on_deleteButton_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(3);
+}
+
+
+void MainWindow::on_goBackButton_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(1);
+    ui->errorDelete->hide();
+    ui->successDelete->hide();
+}
+
+
+void MainWindow::on_confirmDelete_clicked()
+{
+    if (ui->listOfEvents->currentItem() == nullptr){
+        // If no event is selected, show error message
+        ui->errorDelete->show();
+        ui->successDelete->hide();
+        return;
+    }
+
+    QString user = ui->username_login->text();
+    QString password = ui->password_login->text();
+
+    // Get uid from selected event in list
+    QString event_data = ui->listOfEvents->currentItem()->text();
+    std::string s = event_data.toStdString();
+    std::string delimiter = "UID: ";
+    size_t pos = 0;
+    while ((pos = s.find(delimiter)) != std::string::npos) {
+        s.erase(0, pos + delimiter.length());
+    }
+    s.erase(s.length() - 1); // erase \n ?
+    QString uid = QString::fromStdString(s);
+
+
+    // TODO: Inserire selezione calendario
+    deleteEvent(user, password, "test-1", uid);
+    ui -> successDelete -> show();
+    ui -> errorDelete -> hide();
+
 }
 

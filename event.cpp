@@ -26,12 +26,10 @@ Event& Event::operator=(const Event &other){
 
 const QString Event::toString(){
     QString res;
-    res = res + "UID: " + UID + "\n";
-    res = res + "SUMMARY: " + summary + "\n";
-    res = res + "START: " + timestamp_start.date().toString("dd.MM.yyyy")
-            + " " + timestamp_start.time().toString("hh:mm") + "\n";
-    res = res + "END: " + timestamp_end.date().toString("dd.MM.yyyy")
-            + " " + timestamp_end.time().toString("hh:mm") + "\n";
+    res = res + summary + "\n";
+    res = res + "START: " + timestamp_start.time().toString("hh:mm") + "\n";
+    res = res + "END: " + timestamp_end.time().toString("hh:mm") + "\n";
     res = res + "CREATED ON: " + creation_date.date().toString("dd.MM.yyyy") + "\n";
+    res = res + "UID: " + UID + "\n";
     return res;
 }

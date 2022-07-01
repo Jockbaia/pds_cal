@@ -46,6 +46,20 @@ private slots:
     QString eventsListToString(QList<Event>);
     void on_displayedCalendar_clicked(const QDate &date);
 
+    void on_editButton_clicked();
+
+    void on_closeButton_clicked();
+
+    void on_confirmButton_clicked();
+
+    void on_cancelButton_clicked();
+
+    void on_deleteButton_clicked();
+
+    void on_goBackButton_clicked();
+
+    void on_confirmDelete_clicked();
+
 protected slots:
 
 
