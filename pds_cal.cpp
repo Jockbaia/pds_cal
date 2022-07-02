@@ -29,13 +29,14 @@
 #include <thread>
 
 std::map<std::string, Calendar> calendars;
+Todo selected_todo;
+QString selected_cal_name;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::pds_cal)
 {
     ui->setupUi(this);
-    ui->stackedWidget->setCurrentIndex(0);
     ui->success_create_event -> hide();
     ui->error_create_event -> hide();
 
@@ -46,11 +47,22 @@ MainWindow::MainWindow(QWidget *parent)
     ui->TODO_list->setSortingEnabled(true);
     ui->TODO_list->sortItems(1, Qt::SortOrder::AscendingOrder);
     ui->TODO_list->header()->resizeSection(0, 400);
+    ui->error_TODO_create->hide();
+    ui->error_TODO_edit->hide();
 
     ui->successEdit->hide();
     ui->errorEdit->hide();
     ui->successDelete->hide();
     ui->errorDelete->hide();
+    ui->loading_start->hide();
+
+    ui->deleteTodoButton->setEnabled(false);
+    ui->editTodoButton->setEnabled(false);
+    ui->todo_due->setDate(QDate::currentDate());
+    ui->start_date_time->setDateTime(QDateTime::currentDateTime());
+    ui->end_date_time->setDateTime(QDateTime::currentDateTime());
+    ui->stackedWidget->setCurrentIndex(0);
+    ui->tabWidget->setCurrentIndex(0);
 
     connect(ui->displayedCalendar, SIGNAL(QCalendarWidget::activated(QDate)),
                      this, SLOT(MainWindow::on_displayedCalendar_clicked(QDate)));
@@ -67,7 +79,7 @@ void MainWindow::on_loginButton_clicked() {
     QString password = ui->password_login->text();
 
     if (login(login_user.toStdString(), password.toStdString())) {
-        ui->stackedWidget->setCurrentIndex(1);
+        ui->loading_start->show();
         get_calendars(login_user.toStdString(), password.toStdString());
     } else {
         // TODO inserire messaggio di errore se USER / PWD sbagliata
@@ -85,6 +97,7 @@ void MainWindow::showEventsOnDate(QDate date){
     for (Event e : toShow){
         ui->listOfEvents->addItem(e.toString());
     }
+
     // ui->eventsList->setPlainText(toShow);
     //ui->eventsList->insertPlainText(eventsListToString(getEventsOnDate(date)));
 }
@@ -139,16 +152,18 @@ void MainWindow::on_createTodoButton_clicked()
     QString user = ui->username_login->text(); // UID evento di prova
     QString summary = ui->todo_summary->toPlainText();
     QDateTime dueDate = ui->todo_due->dateTime();
-    createTODO(user, ui->vtodo_list->currentText(), summary, dueDate);
+
+    if(summary.isEmpty()) {
+        ui->error_TODO_create->show();
+    } else {
+        createTODO(user, ui->vtodo_list->currentText(), summary, dueDate);
+        ui->error_TODO_create->hide();
+    }
+
 
 }
 
-void MainWindow::on_deleteTodoButton_clicked()
-{
 
-    // TODO da finire
-
-}
 
 
 void MainWindow::on_getButton_clicked()
@@ -353,7 +368,7 @@ void MainWindow::parse_request(QString data) {
         last = user_plus_cal.length();
         std::string calendar_name = user_plus_cal.substr(end_first,last - end_first);
 
-        if(calendar_name != "inbox" && calendar_name != "outbox") { // disable nextcloud inbox/outbox
+        if(calendar_name != "inbox" && calendar_name != "outbox") { // disable nextcloud default inbox/outbox
             my_calendar.display_name = display_name;
             my_calendar.ctag = ctag;
             my_calendar.name = calendar_name;
@@ -361,9 +376,13 @@ void MainWindow::parse_request(QString data) {
             getAllEvents(ui->username_login->text(), ui->password_login->text(), QString::fromStdString(calendar_name));
         }
 
+
+
+
     }
 
-
+    // end first loading: opening first window
+    ui->stackedWidget->setCurrentIndex(1);
 
 }
 
@@ -715,6 +734,7 @@ void MainWindow::on_displayedCalendar_clicked(const QDate &date)
 void MainWindow::on_editButton_clicked()
 {
     ui->stackedWidget->setCurrentIndex(2);
+
 }
 
 
@@ -816,6 +836,123 @@ void MainWindow::on_confirmDelete_clicked()
     deleteEvent(user, password, "personal", uid);
     ui -> successDelete -> show();
     ui -> errorDelete -> hide();
+
+}
+
+
+void MainWindow::on_listOfEvents_itemClicked(QListWidgetItem *item)
+{
+
+    // TODO: Fare in modo che selezionando l'evento
+    // si autocompletino i campi nella schermata "Edit event"
+    // così se non li cambi restano come sono (ora vanno a 00.00 del 01.01.2000)
+
+}
+
+
+void MainWindow::on_TODO_list_itemClicked(QTreeWidgetItem *item, int column)
+{
+
+    selected_todo.summary = item->text(0);
+    selected_todo.due_to = QDateTime::fromString(item->text(1),"yyyy-MM-dd");
+    selected_cal_name = item->text(2);
+    selected_todo.UID = item->text(3);
+    ui->textTODOedit->setText(item->text(0));
+    auto s = item->text(1).toStdString();
+    auto date = QDate::fromString(QString::fromStdString(s),"yyyy-MM-dd");
+
+    ui->dateTODOedit->setDate(date); // TODO da finire
+    ui->editTodoButton->setEnabled(true);
+    ui->deleteTodoButton->setEnabled(true);
+    ui->error_TODO_edit->hide();
+    ui->success_TODO_edit->hide();
+}
+
+void MainWindow::on_deleteTodoButton_clicked()
+{
+
+    deleteEvent(ui->username_login->text(), ui->username_login->text(), selected_cal_name, selected_todo.UID);
+    calendars[selected_cal_name.toStdString()].todos.erase(selected_todo.UID.toStdString());
+    ui->editTodoButton->setEnabled(false);
+    ui->deleteTodoButton->setEnabled(false);
+    delete ui->TODO_list->currentItem();
+
+}
+
+void MainWindow::on_editTodoButton_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(4);
+}
+
+void MainWindow::editTODO(QString user, QString calendar_name, QString summary, QDateTime new_due, QString uid) {
+
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
+
+    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
+    connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
+
+    QNetworkRequest request;
+
+    QString myUrl = "https://cloud.mackers.dev/remote.php/dav/calendars/" + user + "/" + calendar_name + "/" + uid + ".ics";
+    request.setUrl(QUrl(myUrl));
+    request.setRawHeader("Depth", "1");
+    request.setRawHeader("Prefer", "return-minimal");
+    // request.setRawHeader("If-None-Match", "*");
+    request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
+
+    QString request_report = "BEGIN:VCALENDAR\n"
+            "BEGIN:VTODO\n"
+            "UID:" + uid + "\n"
+            "SUMMARY:" + summary + "\n"
+            "DUE;VALUE=DATE:" + new_due.toString("yyyyMMdd") + "\n"
+            "END:VTODO\n"
+            "END:VCALENDAR\n";
+
+    QByteArray converted_report = request_report.toUtf8();
+
+    QNetworkReply *reply = manager->put(request, converted_report);
+    QString response = reply->readAll();
+    qDebug() << "[Add Event] " << reply;
+
+    // Modifico evento localmente
+
+    calendars[calendar_name.toStdString()].todos[uid.toStdString()].due_to = new_due;
+    calendars[calendar_name.toStdString()].todos[uid.toStdString()].summary = summary;
+
+}
+
+
+void MainWindow::on_backTODOedit_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(1);
+}
+
+
+void MainWindow::on_backSAVEedit_clicked()
+{
+
+    QString myTitle = ui->textTODOedit->toPlainText();
+    if(myTitle.isEmpty()) {
+        ui->error_TODO_edit->show();
+        ui->success_TODO_edit->hide();
+    } else {
+
+        editTODO(ui->username_login->text(), selected_cal_name, ui->textTODOedit->toPlainText(), ui->dateTODOedit->dateTime(), selected_todo.UID);
+
+        // replace task with new version
+        delete ui->TODO_list->currentItem();
+        QTreeWidgetItem *newItem = new QTreeWidgetItem();
+        newItem->setText(0,ui->textTODOedit->toPlainText());
+        newItem->setText(1,ui->dateTODOedit->dateTime().toString("yyyy-MM-dd"));
+        newItem->setText(2,selected_cal_name);
+        newItem->setText(3,selected_todo.UID);
+        ui->TODO_list->addTopLevelItem(newItem);
+
+        ui->success_TODO_edit->show();
+        ui->error_TODO_edit->hide();
+
+    }
+
 
 }
 
