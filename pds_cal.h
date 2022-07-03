@@ -5,6 +5,8 @@
 #include <QListWidget>
 #include <QTreeWidgetItem>
 #include <QtNetwork/QNetworkAccessManager>
+#include <QTimer>
+#include "calendar_manager.h"
 #include "event.h"
 #include "todo.h"
 #include "calendar.h"
@@ -79,12 +81,14 @@ private slots:
     void on_listOfEvents_itemClicked(QListWidgetItem *item);
 
     void on_TODO_list_itemClicked(QTreeWidgetItem *item, int column);
-
     void on_editTodoButton_clicked();
-
     void on_backTODOedit_clicked();
-
     void on_backSAVEedit_clicked();
+
+    // timer
+
+    void startSynchronization();
+    void needUpdate(QNetworkReply*);
 
 protected slots:
 
@@ -92,5 +96,6 @@ protected slots:
 private:
     Ui::pds_cal *ui;
     QNetworkAccessManager *mManager;
+    CalendarManager cal_man;
 };
 #endif // PDS_CAL_H

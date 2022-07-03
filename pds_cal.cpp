@@ -28,10 +28,12 @@
 #include <chrono>
 #include <thread>
 
-std::map<std::string, Calendar> calendars;
+#define SECONDS 10
+
+/*std::map<std::string, Calendar> calendars;
 Todo selected_todo;
 QString selected_cal_name;
-
+*/
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::pds_cal)
@@ -66,6 +68,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->displayedCalendar, SIGNAL(QCalendarWidget::activated(QDate)),
                      this, SLOT(MainWindow::on_displayedCalendar_clicked(QDate)));
+
+    cal_man.synch_timer.setInterval(SECONDS * 1000);
+    cal_man.synch_timer.setSingleShot(true);
+
+    connect(&cal_man.synch_timer, SIGNAL(QTimer::timeout()),
+            this, SLOT(MainWindow::startSynchronization()));
+
 }
 
 MainWindow::~MainWindow()
@@ -79,7 +88,9 @@ void MainWindow::on_loginButton_clicked() {
     QString password = ui->password_login->text();
 
     if (login(login_user.toStdString(), password.toStdString())) {
-        ui->loading_start->show();
+        ui->loading_start->show();      
+        cal_man.user = login_user;
+        cal_man.password = password;
         get_calendars(login_user.toStdString(), password.toStdString());
     } else {
         // TODO inserire messaggio di errore se USER / PWD sbagliata
@@ -104,7 +115,7 @@ void MainWindow::showEventsOnDate(QDate date){
 
 QList<Event> MainWindow::getEventsOnDate(QDate date){
     QList<Event> toReturn;
-    for(auto const& cal : calendars){
+    for(auto const& cal : cal_man.calendars){
         std::map<std::string, Event> events = cal.second.events;
         for (auto const& ev : events){
             Event e = ev.second;
@@ -257,13 +268,13 @@ void MainWindow::parse_vcalendar(QString data) {
             my_event.timestamp_end = QDateTime::fromString(ts_en,"yyyyMMddTHHmmss");
             my_event.creation_date = QDateTime::fromString(ts_da,"yyyyMMddTHHmmssZ");
 
-            calendars[cal_name].events[my_event.UID.toStdString()] = my_event;
+            cal_man.calendars[cal_name].events[my_event.UID.toStdString()] = my_event;
 
             }
         }
         else if(calendar_data.size()>1 && calendar_data[1].substr(0,4) == "VTOD") {
 
-            calendars[cal_name].is_todo = true;
+            cal_man.calendars[cal_name].is_todo = true;
 
         for(int i=1; i<calendar_data.size(); i++) {
 
@@ -288,7 +299,7 @@ void MainWindow::parse_vcalendar(QString data) {
             my_todo.due_to = QDateTime::fromString(ts_due,"yyyyMMdd");
             my_todo.creation_date = QDateTime::fromString(ts_tst,"yyyyMMddTHHmmss");
 
-            calendars[cal_name].todos[my_todo.UID.toStdString()] = my_todo;
+            cal_man.calendars[cal_name].todos[my_todo.UID.toStdString()] = my_todo;
 
             // Putting task on TODO
 
@@ -303,21 +314,21 @@ void MainWindow::parse_vcalendar(QString data) {
     }
 }
 
-    calendars[cal_name].color = cal_color;
-    calendars[cal_name].is_shown = true;
+    cal_man.calendars[cal_name].color = cal_color;
+    cal_man.calendars[cal_name].is_shown = true;
 
     // Putting calendar in list
 
     QTreeWidgetItem *newItem = new QTreeWidgetItem();
     newItem->setText(0,QString::fromStdString(cal_name));
-    if(calendars[cal_name].is_todo) {
+    if(cal_man.calendars[cal_name].is_todo) {
         newItem->setText(1,"Tasks");
         ui->vtodo_list->addItem(QString::fromStdString(cal_name));
     } else {
         newItem->setText(1,"Calendar");
         ui->vevent_list->addItem(QString::fromStdString(cal_name));
     }
-    if(calendars[cal_name].is_shown) newItem->setText(2,"Show");
+    if(cal_man.calendars[cal_name].is_shown) newItem->setText(2,"Show");
     else newItem->setText(2,"Hide");
     ui->cal_list->addTopLevelItem(newItem);
 
@@ -372,7 +383,7 @@ void MainWindow::parse_request(QString data) {
             my_calendar.display_name = display_name;
             my_calendar.ctag = ctag;
             my_calendar.name = calendar_name;
-            calendars[calendar_name] = my_calendar;
+            cal_man.calendars[calendar_name] = my_calendar;
             getAllEvents(ui->username_login->text(), ui->password_login->text(), QString::fromStdString(calendar_name));
         }
 
@@ -445,6 +456,9 @@ bool MainWindow::get_calendars(std::string usr, std::string pwd) {
     QNetworkReply *reply = manager->sendCustomRequest(request,"PROPFIND", req_propfind);
     QString response = reply->readAll();
     qDebug() << "[Login] " << reply;
+
+    // first activation of the timer
+    cal_man.synch_timer.start();
 
     return true;
 
@@ -538,7 +552,7 @@ void MainWindow::deleteEvent(QString user, QString pass, QString calendar_name, 
 
     // Elimino evento localmente
 
-    calendars[calendar_name.toStdString()].events.erase(uid.toStdString());
+    cal_man.calendars[calendar_name.toStdString()].events.erase(uid.toStdString());
 
 }
 
@@ -570,7 +584,7 @@ void MainWindow::deleteTODO(QString user, QString pass, QString calendar_name, Q
 
     // Elimino evento localmente
 
-    calendars[calendar_name.toStdString()].todos.erase(uid.toStdString());
+    cal_man.calendars[calendar_name.toStdString()].todos.erase(uid.toStdString());
 
 }
 
@@ -614,7 +628,7 @@ void MainWindow::createEvent(QString user, QString calendar_name, QString summar
     my_event.timestamp_start = start_date_time;
     my_event.timestamp_end = end_date_time;
 
-    calendars[calendar_name.toStdString()].events[uid.toStdString()] = my_event;
+    cal_man.calendars[calendar_name.toStdString()].events[uid.toStdString()] = my_event;
 
 }
 
@@ -659,7 +673,7 @@ void MainWindow::createTODO(QString user, QString calendar_name, QString summary
     my_todo.due_to = end_date;
     my_todo.creation_date = current_datetime;
 
-    calendars[calendar_name.toStdString()].todos[uid.toStdString()] = my_todo;
+    cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()] = my_todo;
 
     // Putting task on TODO
 
@@ -716,13 +730,13 @@ void MainWindow::editEvent(QString user, QString uid, QString calendar_name, QSt
     qDebug() << "[Edit Event] " << reply;
 
     // Modify event locally
-    Event *e = &calendars[calendar_name.toStdString()].events[uid.toStdString()];
+    Event *e = &cal_man.calendars[calendar_name.toStdString()].events[uid.toStdString()];
 
     e->UID = uid;
     e->summary = summary;
     e->timestamp_start = start_date_time;
     e->timestamp_end = end_date_time;
-    e->cal_ptr = &calendars[calendar_name.toStdString()];
+    e->cal_ptr = &cal_man.calendars[calendar_name.toStdString()];
 }
 
 void MainWindow::on_displayedCalendar_clicked(const QDate &date)
@@ -862,10 +876,10 @@ void MainWindow::on_listOfEvents_itemClicked(QListWidgetItem *item)
 void MainWindow::on_TODO_list_itemClicked(QTreeWidgetItem *item, int column)
 {
 
-    selected_todo.summary = item->text(0);
-    selected_todo.due_to = QDateTime::fromString(item->text(1),"yyyy-MM-dd");
-    selected_cal_name = item->text(2);
-    selected_todo.UID = item->text(3);
+    cal_man.selected_todo.summary = item->text(0);
+    cal_man.selected_todo.due_to = QDateTime::fromString(item->text(1),"yyyy-MM-dd");
+    cal_man.selected_cal_name = item->text(2);
+    cal_man.selected_todo.UID = item->text(3);
     ui->textTODOedit->setText(item->text(0));
     auto s = item->text(1).toStdString();
     auto date = QDate::fromString(QString::fromStdString(s),"yyyy-MM-dd");
@@ -880,8 +894,8 @@ void MainWindow::on_TODO_list_itemClicked(QTreeWidgetItem *item, int column)
 void MainWindow::on_deleteTodoButton_clicked()
 {
 
-    deleteEvent(ui->username_login->text(), ui->username_login->text(), selected_cal_name, selected_todo.UID);
-    calendars[selected_cal_name.toStdString()].todos.erase(selected_todo.UID.toStdString());
+    deleteEvent(ui->username_login->text(), ui->username_login->text(), cal_man.selected_cal_name, cal_man.selected_todo.UID);
+    cal_man.calendars[cal_man.selected_cal_name.toStdString()].todos.erase(cal_man.selected_todo.UID.toStdString());
     ui->editTodoButton->setEnabled(false);
     ui->deleteTodoButton->setEnabled(false);
     delete ui->TODO_list->currentItem();
@@ -925,17 +939,15 @@ void MainWindow::editTODO(QString user, QString calendar_name, QString summary, 
 
     // Modifico evento localmente
 
-    calendars[calendar_name.toStdString()].todos[uid.toStdString()].due_to = new_due;
-    calendars[calendar_name.toStdString()].todos[uid.toStdString()].summary = summary;
+    cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].due_to = new_due;
+    cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].summary = summary;
 
 }
-
 
 void MainWindow::on_backTODOedit_clicked()
 {
     ui->stackedWidget->setCurrentIndex(1);
 }
-
 
 void MainWindow::on_backSAVEedit_clicked()
 {
@@ -946,15 +958,15 @@ void MainWindow::on_backSAVEedit_clicked()
         ui->success_TODO_edit->hide();
     } else {
 
-        editTODO(ui->username_login->text(), selected_cal_name, ui->textTODOedit->toPlainText(), ui->dateTODOedit->dateTime(), selected_todo.UID);
+        editTODO(ui->username_login->text(), cal_man.selected_cal_name, ui->textTODOedit->toPlainText(), ui->dateTODOedit->dateTime(), cal_man.selected_todo.UID);
 
         // replace task with new version
         delete ui->TODO_list->currentItem();
         QTreeWidgetItem *newItem = new QTreeWidgetItem();
         newItem->setText(0,ui->textTODOedit->toPlainText());
         newItem->setText(1,ui->dateTODOedit->dateTime().toString("yyyy-MM-dd"));
-        newItem->setText(2,selected_cal_name);
-        newItem->setText(3,selected_todo.UID);
+        newItem->setText(2,cal_man.selected_cal_name);
+        newItem->setText(3,cal_man.selected_todo.UID);
         ui->TODO_list->addTopLevelItem(newItem);
 
         ui->success_TODO_edit->show();
@@ -965,3 +977,61 @@ void MainWindow::on_backSAVEedit_clicked()
 
 }
 
+void MainWindow::startSynchronization(){
+
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
+
+    connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(needUpdate(QNetworkReply*)));
+    connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
+
+    QNetworkRequest request;
+
+    QString my_qurl = "https://cloud.mackers.dev/remote.php/dav/calendars/" + cal_man.user;
+
+    request.setUrl(QUrl(my_qurl));
+    request.setRawHeader("Depth", "1");
+    request.setRawHeader("Prefer", "return-minimal");
+    request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
+
+    QByteArray req_propfind = "<d:propfind xmlns:d=\"DAV:\" xmlns:cs=\"http://calendarserver.org/ns/\" xmlns:c=\"urn:ietf:params:icsText:ns:caldav\">\n"
+                              "  <d:prop>\n"
+                              "     <d:resourcetype />\n"
+                              "     <d:displayname />\n"
+                              "     <cs:getctag />\n"
+                              "     <c:supported-calendar-component-set />\n"
+                              "  </d:prop>\n"
+                              "</d:propfind>";
+
+    QNetworkReply *reply = manager->sendCustomRequest(request,"PROPFIND", req_propfind);
+    QString response = reply->readAll();
+    qDebug() << "[Login] " << reply;
+}
+
+void MainWindow::needUpdate(QNetworkReply *reply){
+
+    QString replyData = reply -> readAll();
+
+    for (QString partial_reply : replyData.split("<d:response>")){
+        qsizetype start_ctag = partial_reply.indexOf("<cs:getctag>");
+        qsizetype end_ctag = partial_reply.indexOf("</cs:getctag>");
+        qsizetype start_cal_name = partial_reply.indexOf("<d:href>/remote.php/dav/calendars/");
+        qsizetype end_cal_name = partial_reply.indexOf("/</d:href>");
+
+        partial_reply.remove(0, start_ctag + 12); // remove what's before the ctag
+        QString ctag = partial_reply.section("</cs:getctag>", 0, 0);    // get what's before </cs...>
+        partial_reply.remove(0, end_ctag + 13); // remove until end of ctag field
+
+        partial_reply.remove(0, start_cal_name + 34);
+        QString user_cal = partial_reply.section("/</d:href>", 0, 0);
+        QString cal_name = user_cal.section("/", 1, 1);
+
+        QString old_ctag = QString::fromStdString(cal_man.calendars[cal_name.toStdString()].ctag);
+
+        if (old_ctag != ctag){
+            getAllEvents(cal_man.user, cal_man.password, cal_name);
+        }
+
+    }
+    // at the end, restart timer
+    cal_man.synch_timer.start();
+}
