@@ -18,7 +18,9 @@ public:
 
     std::map<std::string, Calendar> calendars;
     Todo selected_todo;
+    Calendar selected_cal;
     QString selected_cal_name;
+    bool is_new;
 
 
 signals:

@@ -60,11 +60,17 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->deleteTodoButton->setEnabled(false);
     ui->editTodoButton->setEnabled(false);
+    ui->delete_calendar_btn->setEnabled(false);
+    ui->share_calendar_btn->setEnabled(false);
     ui->todo_due->setDate(QDate::currentDate());
     ui->start_date_time->setDateTime(QDateTime::currentDateTime());
     ui->end_date_time->setDateTime(QDateTime::currentDateTime());
     ui->stackedWidget->setCurrentIndex(0);
     ui->tabWidget->setCurrentIndex(0);
+    ui->create_cal_success->hide();
+    ui->create_cal_error->hide();
+    ui->share_cal_success->hide();
+    ui->share_cal_error->hide();
 
     connect(ui->displayedCalendar, SIGNAL(QCalendarWidget::activated(QDate)),
                      this, SLOT(MainWindow::on_displayedCalendar_clicked(QDate)));
@@ -236,7 +242,11 @@ void MainWindow::parse_vcalendar(QString data) {
     }
 
     std::string cal_name = current_cal[4].substr(current_cal[4].find(":")).erase(0,1);
-    std::string cal_color = current_cal[5].substr(current_cal[5].find(":")).erase(0,1);
+
+    // some events have a set color
+    std::string cal_color;
+    if(!cal_man.is_new) cal_color = current_cal[5].substr(current_cal[5].find(":")).erase(0,1);
+    else cal_color = "#b33b3b";
 
     // inserimento eventi calendario locale
 
@@ -321,16 +331,32 @@ void MainWindow::parse_vcalendar(QString data) {
 
     QTreeWidgetItem *newItem = new QTreeWidgetItem();
     newItem->setText(0,QString::fromStdString(cal_name));
-    if(cal_man.calendars[cal_name].is_todo) {
-        newItem->setText(1,"Tasks");
-        ui->vtodo_list->addItem(QString::fromStdString(cal_name));
-    } else {
-        newItem->setText(1,"Calendar");
-        ui->vevent_list->addItem(QString::fromStdString(cal_name));
+
+    if(cal_man.is_new) { // evento creato
+        if(ui->create_cal_type->currentText() == "Calendar") {
+            ui->vevent_list->addItem(QString::fromStdString(cal_name));
+            newItem->setText(1,"Calendar");
+        } else {
+            ui->vtodo_list->addItem(QString::fromStdString(cal_name));
+            newItem->setText(1,"Tasks");
+        }
+    } else { // evento importato
+        if(cal_man.calendars[cal_name].is_todo) {
+            newItem->setText(1,"Tasks");
+            ui->vtodo_list->addItem(QString::fromStdString(cal_name));
+        } else {
+            newItem->setText(1,"Calendar");
+            ui->vevent_list->addItem(QString::fromStdString(cal_name));
+        }
+        if(cal_man.calendars[cal_name].is_shown) newItem->setText(2,"Show");
+        else newItem->setText(2,"Hide");
+        ui->cal_list->addTopLevelItem(newItem);
     }
+
     if(cal_man.calendars[cal_name].is_shown) newItem->setText(2,"Show");
     else newItem->setText(2,"Hide");
     ui->cal_list->addTopLevelItem(newItem);
+    cal_man.is_new = false;
 
 }
 
@@ -407,7 +433,11 @@ bool MainWindow::login(std::string usr, std::string pwd) {
 
     QNetworkRequest request;
 
-    request.setUrl(QUrl("https://cloud.mackers.dev/remote.php/dav/calendars/progetto-pds"));
+    std::string myUrl_string = "https://cloud.mackers.dev/remote.php/dav/calendars/" + usr ;
+    QString my_qurl = QString::fromStdString(myUrl_string);
+
+    request.setUrl(QUrl(my_qurl));
+
     request.setRawHeader("Depth", "0");
     request.setRawHeader("Prefer", "return-minimal");
     request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
@@ -488,8 +518,8 @@ void MainWindow::getCalendars_slot(QNetworkReply* reply) {
 }
 
 void MainWindow::do_authentication(QNetworkReply *, QAuthenticator *q) {
-    q->setUser(QString::fromStdString("progetto-pds"));
-    q->setPassword(QString::fromStdString("progetto-pds"));
+    q->setUser(ui->username_login->text());
+    q->setPassword(ui->password_login->text());
 }
 
 void MainWindow::getAllEvents(QString user, QString pass, QString calendar_name) {
@@ -884,7 +914,7 @@ void MainWindow::on_TODO_list_itemClicked(QTreeWidgetItem *item, int column)
     auto s = item->text(1).toStdString();
     auto date = QDate::fromString(QString::fromStdString(s),"yyyy-MM-dd");
 
-    ui->dateTODOedit->setDate(date); // TODO da finire
+    ui->dateTODOedit->setDate(date);
     ui->editTodoButton->setEnabled(true);
     ui->deleteTodoButton->setEnabled(true);
     ui->error_TODO_edit->hide();
@@ -1035,3 +1065,252 @@ void MainWindow::needUpdate(QNetworkReply *reply){
     // at the end, restart timer
     cal_man.synch_timer.start();
 }
+
+void MainWindow::on_new_calendar_btn_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(5);
+}
+
+
+void MainWindow::on_create_cal_goback_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(1);
+    ui->create_cal_success->hide();
+    ui->create_cal_error->hide();
+}
+
+
+void MainWindow::on_create_cal_go_clicked()
+{
+    QString myTitle = ui->create_cal_name->toPlainText();
+    if(myTitle.isEmpty()) {
+        ui->create_cal_error->show();
+        ui->create_cal_success->hide();
+    } else {
+
+        cal_man.is_new = true;
+        create_calendar(ui->username_login->text().toStdString(), ui->password_login->text().toStdString(), ui->create_cal_name->toPlainText().toStdString());
+        ui->create_cal_success->show();
+        ui->create_cal_error->hide();
+
+    }
+
+}
+
+void MainWindow::create_calendar(std::string usr, std::string pwd, std::string calendar_name) {
+
+    QString _usr = QString::fromStdString(usr);
+    QString _pwd = QString::fromStdString(pwd);
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
+
+    connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(createCalendar_slot(QNetworkReply*)));
+    connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
+
+    QNetworkRequest request;
+
+    std::string myUrl_string = "https://cloud.mackers.dev/remote.php/dav/calendars/" + usr + "/" + calendar_name;
+    QString my_qurl = QString::fromStdString(myUrl_string);
+
+    request.setUrl(QUrl(my_qurl));
+    request.setRawHeader("Depth", "1");
+    request.setRawHeader("Prefer", "return-minimal");
+    request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
+    std::string cal_type;
+
+    std::string req_mkcalendar = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n"
+                              "   <C:mkcalendar xmlns:D=\"DAV:\"\n"
+                              "                 xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n"
+                              "     <D:set>\n"
+                              "       <D:prop>\n"
+                              "         <D:displayname>" + calendar_name + "</D:displayname>\n"
+                              "       </D:prop>\n"
+                              "     </D:set>\n"
+                              "   </C:mkcalendar>";
+
+    QByteArray request_mk;
+    request_mk.append(req_mkcalendar);
+
+    QNetworkReply *reply = manager->sendCustomRequest(request,"MKCALENDAR", request_mk);
+    QString response = reply->readAll();
+    qDebug() << "[Creation calendar] " << reply;
+
+
+}
+
+void MainWindow::createCalendar_slot(QNetworkReply* reply) {
+    if (reply->error() == QNetworkReply::NoError) {
+        qDebug() << "[Created]";
+        QString strReply = (QString)reply->readAll();
+        getAllEvents(ui->username_login->text(), ui->password_login->text(), ui->create_cal_name->toPlainText());
+    }
+    else {
+        qDebug() << "[Failure]" << reply -> errorString();
+        delete reply;
+    }
+}
+
+void MainWindow::deleteCalendar_slot(QNetworkReply* reply) {
+    if (reply->error() == QNetworkReply::NoError) {
+        qDebug() << "[Deleted]";
+        QString strReply = (QString)reply->readAll();
+        delete ui->cal_list->currentItem();
+
+        if (cal_man.selected_cal.is_todo) {
+            ui->vtodo_list->removeItem(ui->vtodo_list->findText(QString::fromStdString(cal_man.selected_cal.name), Qt::MatchExactly));
+        } else {
+            ui->vevent_list->removeItem(ui->vevent_list->findText(QString::fromStdString(cal_man.selected_cal.name), Qt::MatchExactly));
+        }
+
+        ui->delete_calendar_btn->setEnabled(false);
+
+    }
+    else {
+        qDebug() << "[Failure]" << reply -> errorString();
+        delete reply;
+    }
+}
+
+
+
+
+void MainWindow::on_cal_list_itemClicked(QTreeWidgetItem *item, int column)
+{
+    ui->delete_calendar_btn->setEnabled(true);
+    ui->share_calendar_btn->setEnabled(true);
+    cal_man.selected_cal.name = item->text(0).toStdString();
+    cal_man.selected_cal.display_name = item->text(0).toStdString();
+
+    std::string curTyp = item->text(1).toStdString();
+
+    if (curTyp == "Calendar") {
+        cal_man.selected_cal.is_todo = false;
+    } else {
+        cal_man.selected_cal.is_todo = true;
+    }
+}
+
+
+void MainWindow::on_delete_calendar_btn_clicked()
+{
+    delete_calendar(ui->username_login->text().toStdString(), ui->password_login->text().toStdString(), cal_man.selected_cal.name);
+}
+
+void MainWindow::delete_calendar(std::string usr, std::string pwd, std::string calendar_name) {
+
+    QString _usr = QString::fromStdString(usr);
+    QString _pwd = QString::fromStdString(pwd);
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
+
+    connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(deleteCalendar_slot(QNetworkReply*)));
+    connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
+
+    QNetworkRequest request;
+
+    std::string myUrl_string = "https://cloud.mackers.dev/remote.php/dav/calendars/" + usr + "/" + calendar_name;
+    QString my_qurl = QString::fromStdString(myUrl_string);
+
+    request.setUrl(QUrl(my_qurl));
+    request.setRawHeader("Depth", "1");
+    request.setRawHeader("Prefer", "return-minimal");
+    request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
+    std::string cal_type;
+
+    std::string delete_cal = "";
+
+    QByteArray delete_req;
+    delete_req.append(delete_cal);
+
+    QNetworkReply *reply = manager->sendCustomRequest(request,"DELETE", delete_req);
+    QString response = reply->readAll();
+    qDebug() << "[Delete calendar] " << reply;
+
+
+}
+
+void MainWindow::share_calendar(std::string usr, std::string pwd, std::string calendar_name, std::string mail) {
+
+    QString _usr = QString::fromStdString(usr);
+    QString _pwd = QString::fromStdString(pwd);
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
+
+    connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(shareCalendar_slot(QNetworkReply*)));
+    connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
+
+    QNetworkRequest request;
+
+    std::string myUrl_string = "https://cloud.mackers.dev/remote.php/dav/calendars/" + usr + "/" + calendar_name;
+    QString my_qurl = QString::fromStdString(myUrl_string);
+
+    request.setUrl(QUrl(my_qurl));
+    request.setRawHeader("Depth", "1");
+    request.setRawHeader("Prefer", "return-minimal");
+    request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
+    std::string cal_type;
+
+    std::string req_share = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
+                                 "<D:share-resource xmlns:D=\"DAV:\">\n"
+                                 "    <D:sharee>\n"
+                                 "        <D:href>mailto:" + mail + "</D:href>\n"
+                                 "        <D:prop>\n"
+                                 "            <D:displayname>" + calendar_name + " (shared by " + usr + ")</D:displayname>\n"
+                                 "        </D:prop>\n"
+                                 "        <D:share-access>\n"
+                                 "            <D:???? />\n"
+                                 "        </D:share-access>\n"
+                                 "    </D:sharee>\n"
+                                 "    <D:prop>"
+                                 "        <D:displayname />"
+                                 "    </D:prop>"
+                                 "</D:share-resource>";
+
+    QByteArray request_share;
+    request_share.append(req_share);
+
+    QNetworkReply *reply = manager->sendCustomRequest(request,"POST", request_share);
+    QString response = reply->readAll();
+    qDebug() << "[Sharing calendar] " << reply;
+
+
+}
+
+
+void MainWindow::on_share_calendar_btn_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(6);
+}
+
+
+void MainWindow::on_share_cal_goback_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(1);
+    ui->share_cal_success->hide();
+    ui->share_cal_error->hide();
+}
+
+
+void MainWindow::on_share_cal_go_clicked()
+{
+
+    QString myTitle = ui->share_cal_name->toPlainText();
+    if(myTitle.isEmpty()) {
+        ui->share_cal_error->show();
+        ui->share_cal_success->hide();
+    } else {
+        share_calendar(ui->username_login->text().toStdString(), ui->password_login->text().toStdString(), cal_man.selected_cal.name, ui->share_cal_name->toPlainText().toStdString());
+        ui->share_cal_success->show();
+        ui->share_cal_error->hide();
+
+    }
+}
+
+void MainWindow::shareCalendar_slot(QNetworkReply* reply) {
+    if (reply->error() == QNetworkReply::NoError) {
+        qDebug() << "[Shared]";
+        QString strReply = (QString)reply->readAll();
+    }
+    else {
+        qDebug() << "[Failure]" << reply -> errorString();
+        delete reply;
+    }
+}
+

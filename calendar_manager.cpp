@@ -13,8 +13,9 @@ CalendarManager::CalendarManager(const CalendarManager &other){
     password = other.password;
 
     calendars = other.calendars;
-    selected_todo = other.selected_todo;
+    selected_cal = other.selected_cal;
     selected_cal_name = other.selected_cal_name;
+    is_new = other.is_new;
 
 
 }
