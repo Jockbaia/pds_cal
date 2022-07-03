@@ -458,7 +458,7 @@ bool MainWindow::get_calendars(std::string usr, std::string pwd) {
     qDebug() << "[Login] " << reply;
 
     // first activation of the timer
-    cal_man.synch_timer.start();
+    // cal_man.synch_timer.start();
 
     return true;
 
