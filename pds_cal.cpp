@@ -733,7 +733,7 @@ void MainWindow::on_displayedCalendar_clicked(const QDate &date)
 
 void MainWindow::on_editButton_clicked()
 {
-    ui->stackedWidget->setCurrentIndex(2);
+    ui->stackedWidget->setCurrentIndex(3);
 
 }
 
@@ -796,7 +796,7 @@ void MainWindow::on_cancelEditButton_clicked()
 
 void MainWindow::on_deleteButton_clicked()
 {
-    ui->stackedWidget->setCurrentIndex(3);
+    ui->stackedWidget->setCurrentIndex(4);
 }
 
 
@@ -842,10 +842,19 @@ void MainWindow::on_confirmDelete_clicked()
 
 void MainWindow::on_listOfEvents_itemClicked(QListWidgetItem *item)
 {
+    QString event_data = item->text();
 
-    // TODO: Fare in modo che selezionando l'evento
-    // si autocompletino i campi nella schermata "Edit event"
-    // così se non li cambi restano come sono (ora vanno a 00.00 del 01.01.2000)
+    QString summary = event_data.section("\n", 0, 0);
+    QString start = event_data.section("\n", 1, 1);
+    QString end = event_data.section("\n", 2, 2);
+
+    qsizetype pos = 0;
+    start.remove(pos, 7);
+    end.remove(pos, 5);
+
+    ui->titleEdit->setText(summary);
+    ui->startDateTimeEdit->setDateTime(QDateTime::fromString(start, "dd.MM.yyyy hh:mm"));
+    ui->endDateTimeEdit->setDateTime(QDateTime::fromString(end, "dd.MM.yyyy hh:mm"));
 
 }
 

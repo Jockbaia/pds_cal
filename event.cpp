@@ -29,8 +29,8 @@ Event& Event::operator=(const Event &other){
 const QString Event::toString(){
     QString res;
     res = res + summary + "\n";
-    res = res + "START: " + timestamp_start.time().toString("hh:mm") + "\n";
-    res = res + "END: " + timestamp_end.time().toString("hh:mm") + "\n";
+    res = res + "START: " + timestamp_start.toString("dd.MM.yyyy hh:mm") + "\n";
+    res = res + "END: " + timestamp_end.toString("dd.MM.yyyy hh:mm") + "\n";
     // res = res + "CREATED ON: " + creation_date.date().toString("dd.MM.yyyy") + "\n";
     res = res + "UID: " + UID + "\n";
     return res;
