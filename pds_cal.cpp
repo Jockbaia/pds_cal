@@ -28,12 +28,9 @@
 #include <chrono>
 #include <thread>
 
-#define SECONDS 10
+#define SECONDS 5
 
-/*std::map<std::string, Calendar> calendars;
-Todo selected_todo;
-QString selected_cal_name;
-*/
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::pds_cal)
@@ -78,8 +75,8 @@ MainWindow::MainWindow(QWidget *parent)
     cal_man.synch_timer.setInterval(SECONDS * 1000);
     cal_man.synch_timer.setSingleShot(true);
 
-    connect(&cal_man.synch_timer, SIGNAL(QTimer::timeout()),
-            this, SLOT(MainWindow::startSynchronization()));
+    connect(&cal_man.synch_timer, SIGNAL(QTimer::timeout),
+            this, SLOT(startSynchronization));
 
 }
 
@@ -179,9 +176,6 @@ void MainWindow::on_createTodoButton_clicked()
 
 
 }
-
-
-
 
 void MainWindow::on_getButton_clicked()
 {
@@ -488,7 +482,7 @@ bool MainWindow::get_calendars(std::string usr, std::string pwd) {
     qDebug() << "[Login] " << reply;
 
     // first activation of the timer
-    // cal_man.synch_timer.start();
+    cal_man.synch_timer.start();
 
     return true;
 
@@ -777,7 +771,7 @@ void MainWindow::on_displayedCalendar_clicked(const QDate &date)
 
 void MainWindow::on_editButton_clicked()
 {
-    ui->stackedWidget->setCurrentIndex(3);
+    ui->stackedWidget->setCurrentIndex(2);
 
 }
 
@@ -812,17 +806,31 @@ void MainWindow::on_confirmEditButton_clicked()
     while ((pos = s.find(delimiter)) != std::string::npos) {
         s.erase(0, pos + delimiter.length());
     }
-    s.erase(s.length() - 1); // erase \n ?
+    s.erase(s.length() - 1); // erase \n
     QString uid = QString::fromStdString(s);
+    QString cal_name = "";
+    QString display_name = "";
 
+    for (auto cal : cal_man.calendars){
+        Calendar c = cal.second;
+        if (c.events.find(s) != c.events.end()){
+            cal_name = QString::fromStdString(c.name);
+            display_name = QString::fromStdString(c.display_name);
+        }
+    }
 
-    // TODO: Inserire selezione calendario
-
+    //debug
+    if (cal_name == ""){
+        qDebug() << "ERROR: DID NOT FIND CALENDAR CONTAINING UID: " << uid;
+    }
+    else{
+        qDebug() << "CALENDAR FOUND FOR REQUESTED UID: cn " << cal_name << ", dn " << display_name;
+    }
     if (summary.isEmpty() || start_date_time > end_date_time) {
         ui -> successEdit -> hide();
         ui -> errorEdit -> show();
     } else {
-        editEvent(user, uid, "personal", summary, start_date_time, end_date_time);
+        editEvent(user, uid, cal_name, summary, start_date_time, end_date_time);
         ui -> successEdit -> show();
         ui -> errorEdit -> hide();
     }
@@ -840,7 +848,7 @@ void MainWindow::on_cancelEditButton_clicked()
 
 void MainWindow::on_deleteButton_clicked()
 {
-    ui->stackedWidget->setCurrentIndex(4);
+    ui->stackedWidget->setCurrentIndex(3);
 }
 
 
@@ -874,10 +882,26 @@ void MainWindow::on_confirmDelete_clicked()
     }
     s.erase(s.length() - 1); // erase \n ?
     QString uid = QString::fromStdString(s);
-
+    QString cal_name = "";
+    QString display_name = "";
 
     // TODO: Inserire selezione calendario
-    deleteEvent(user, password, "personal", uid);
+    for (auto cal : cal_man.calendars){
+        Calendar c = cal.second;
+        if (c.events.find(s) != c.events.end()){
+            cal_name = QString::fromStdString(c.name);
+            display_name = QString::fromStdString(c.display_name);
+        }
+    }
+
+    //debug
+    if (cal_name == ""){
+        qDebug() << "ERROR: DID NOT FIND CALENDAR CONTAINING UID: " << uid;
+    }
+    else{
+        qDebug() << "CALENDAR FOUND FOR REQUESTED UID: cn " << cal_name << ", dn " << display_name;
+    }
+    deleteEvent(user, password, cal_name, uid);
     ui -> successDelete -> show();
     ui -> errorDelete -> hide();
 
@@ -1011,6 +1035,8 @@ void MainWindow::startSynchronization(){
 
     QNetworkAccessManager *manager = new QNetworkAccessManager();
 
+    qDebug() << "Timer went off - starting synchronization";
+
     connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(needUpdate(QNetworkReply*)));
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
 
@@ -1041,11 +1067,13 @@ void MainWindow::needUpdate(QNetworkReply *reply){
 
     QString replyData = reply -> readAll();
 
+    qDebug() << "Timer went off - checking for updates";
+
     for (QString partial_reply : replyData.split("<d:response>")){
         qsizetype start_ctag = partial_reply.indexOf("<cs:getctag>");
         qsizetype end_ctag = partial_reply.indexOf("</cs:getctag>");
         qsizetype start_cal_name = partial_reply.indexOf("<d:href>/remote.php/dav/calendars/");
-        qsizetype end_cal_name = partial_reply.indexOf("/</d:href>");
+        // qsizetype end_cal_name = partial_reply.indexOf("/</d:href>");
 
         partial_reply.remove(0, start_ctag + 12); // remove what's before the ctag
         QString ctag = partial_reply.section("</cs:getctag>", 0, 0);    // get what's before </cs...>
@@ -1170,9 +1198,6 @@ void MainWindow::deleteCalendar_slot(QNetworkReply* reply) {
     }
 }
 
-
-
-
 void MainWindow::on_cal_list_itemClicked(QTreeWidgetItem *item, int column)
 {
     ui->delete_calendar_btn->setEnabled(true);
@@ -1188,7 +1213,6 @@ void MainWindow::on_cal_list_itemClicked(QTreeWidgetItem *item, int column)
         cal_man.selected_cal.is_todo = true;
     }
 }
-
 
 void MainWindow::on_delete_calendar_btn_clicked()
 {
