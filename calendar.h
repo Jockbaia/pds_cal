@@ -14,7 +14,7 @@ public:
     Calendar(const Calendar &other);
 
     Calendar& operator=(const Calendar& other);
-
+    void eraseContent();
 
     std::string name;
     std::string display_name;

@@ -36,7 +36,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>6</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="page">
      <widget class="QLineEdit" name="password_login">
@@ -176,7 +176,7 @@ padding-left: 5px;</string>
        </rect>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="Calendario">
        <attribute name="title">
@@ -337,6 +337,11 @@ padding-left: 5px;</string>
         <column>
          <property name="text">
           <string>Group</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Status</string>
          </property>
         </column>
        </widget>
@@ -1086,6 +1091,19 @@ padding-left: 5px;</string>
       </property>
       <property name="text">
        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;Error! Title cannot be empty&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="checkCompleted">
+      <property name="geometry">
+       <rect>
+        <x>250</x>
+        <y>80</y>
+        <width>231</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Mark as completed</string>
       </property>
      </widget>
     </widget>

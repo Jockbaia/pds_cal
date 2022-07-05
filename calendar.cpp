@@ -30,11 +30,16 @@ Calendar& Calendar::operator=(const Calendar& other){
     is_shown = other.is_shown;
     is_todo = other.is_todo;
 
-    for (auto x : other.events){
+    for (auto const x : other.events){
         events[x.first] = x.second;
     }
-    for (auto x : other.todos){
+    for (auto const x : other.todos){
         todos[x.first] = x.second;
     }
     return *this;
+}
+
+void Calendar::eraseContent(){
+    events.clear();
+    todos.clear();
 }

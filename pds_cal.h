@@ -86,7 +86,7 @@ private slots:
 
     void createTODO(QString user, QString calendar_name, QString summary, QDateTime end_date);
     void deleteTODO(QString user, QString pass, QString calendar_name, QString uid);
-    void editTODO(QString user, QString calendar_name, QString summary, QDateTime new_due, QString uid);
+    void editTODO(QString user, QString calendar_name, QString summary, QDateTime new_due, QString uid, bool comp);
 
     // calendar
 
@@ -101,7 +101,7 @@ private slots:
     // timer
 
     void startSynchronization();
-    void needUpdate(QNetworkReply*);
+    void handle_synch_reply(QNetworkReply*);
 
 
     void on_share_calendar_btn_clicked();
@@ -117,5 +117,6 @@ private:
     Ui::pds_cal *ui;
     QNetworkAccessManager *mManager;
     CalendarManager cal_man;
+    QTimer* synch_timer;
 };
 #endif // PDS_CAL_H

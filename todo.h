@@ -18,6 +18,7 @@ public:
     QString summary;
     QDateTime due_to;
     QDateTime creation_date;
+    bool completed;
 
     const QString toString();
 

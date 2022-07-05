@@ -28,7 +28,7 @@
 #include <chrono>
 #include <thread>
 
-#define SECONDS 5
+#define SECONDS 10
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -48,6 +48,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->TODO_list->header()->resizeSection(0, 400);
     ui->error_TODO_create->hide();
     ui->error_TODO_edit->hide();
+    ui->checkCompleted->setChecked(false);
 
     ui->successEdit->hide();
     ui->errorEdit->hide();
@@ -72,11 +73,13 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->displayedCalendar, SIGNAL(QCalendarWidget::activated(QDate)),
                      this, SLOT(MainWindow::on_displayedCalendar_clicked(QDate)));
 
-    cal_man.synch_timer.setInterval(SECONDS * 1000);
-    cal_man.synch_timer.setSingleShot(true);
+    synch_timer = new QTimer(this);
 
-    connect(&cal_man.synch_timer, SIGNAL(QTimer::timeout),
-            this, SLOT(startSynchronization));
+    synch_timer->setInterval(SECONDS * 1000);
+    synch_timer->setSingleShot(true);
+
+    connect(synch_timer, &QTimer::timeout,
+            this, &MainWindow::startSynchronization);
 
 }
 
@@ -311,9 +314,10 @@ void MainWindow::parse_vcalendar(QString data) {
             newItem->setText(0,my_todo.summary);
             newItem->setText(1,my_todo.due_to.toString("yyyy-MM-dd"));
             newItem->setText(2,QString::fromStdString(cal_name));
-            newItem->setText(3,my_todo.UID);
+            newItem->setText(4,my_todo.UID);
+            newItem->setText(3, "Due");
             ui->TODO_list->addTopLevelItem(newItem);
-    }
+        }
 
     }
 }
@@ -407,9 +411,6 @@ void MainWindow::parse_request(QString data) {
             getAllEvents(ui->username_login->text(), ui->password_login->text(), QString::fromStdString(calendar_name));
         }
 
-
-
-
     }
 
     // end first loading: opening first window
@@ -482,7 +483,7 @@ bool MainWindow::get_calendars(std::string usr, std::string pwd) {
     qDebug() << "[Login] " << reply;
 
     // first activation of the timer
-    cal_man.synch_timer.start();
+    // synch_timer->start();
 
     return true;
 
@@ -512,9 +513,11 @@ void MainWindow::getCalendars_slot(QNetworkReply* reply) {
 }
 
 void MainWindow::do_authentication(QNetworkReply *, QAuthenticator *q) {
-    q->setUser(ui->username_login->text());
-    q->setPassword(ui->password_login->text());
-}
+    //q->setUser(ui->username_login->text());
+    //q->setPassword(ui->password_login->text());
+    q->setUser(cal_man.user);
+    q->setPassword(cal_man.password);
+    }
 
 void MainWindow::getAllEvents(QString user, QString pass, QString calendar_name) {
 
@@ -696,7 +699,7 @@ void MainWindow::createTODO(QString user, QString calendar_name, QString summary
     my_todo.summary = summary;
     my_todo.due_to = end_date;
     my_todo.creation_date = current_datetime;
-
+    my_todo.completed = false; // makes no sense to create a todo when it's already done
     cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()] = my_todo;
 
     // Putting task on TODO
@@ -705,7 +708,8 @@ void MainWindow::createTODO(QString user, QString calendar_name, QString summary
     newItem->setText(0,my_todo.summary);
     newItem->setText(1,my_todo.due_to.toString("yyyy-MM-dd"));
     newItem->setText(2,calendar_name);
-    newItem->setText(3, my_todo.UID);
+    newItem->setText(4, my_todo.UID);
+    newItem->setText(3, "Due");
     ui->TODO_list->addTopLevelItem(newItem);
 
 }
@@ -820,12 +824,12 @@ void MainWindow::on_confirmEditButton_clicked()
     }
 
     //debug
-    if (cal_name == ""){
+    /*if (cal_name == ""){
         qDebug() << "ERROR: DID NOT FIND CALENDAR CONTAINING UID: " << uid;
     }
     else{
         qDebug() << "CALENDAR FOUND FOR REQUESTED UID: cn " << cal_name << ", dn " << display_name;
-    }
+    }*/
     if (summary.isEmpty() || start_date_time > end_date_time) {
         ui -> successEdit -> hide();
         ui -> errorEdit -> show();
@@ -895,12 +899,12 @@ void MainWindow::on_confirmDelete_clicked()
     }
 
     //debug
-    if (cal_name == ""){
+    /*if (cal_name == ""){
         qDebug() << "ERROR: DID NOT FIND CALENDAR CONTAINING UID: " << uid;
     }
     else{
         qDebug() << "CALENDAR FOUND FOR REQUESTED UID: cn " << cal_name << ", dn " << display_name;
-    }
+    }*/
     deleteEvent(user, password, cal_name, uid);
     ui -> successDelete -> show();
     ui -> errorDelete -> hide();
@@ -933,12 +937,14 @@ void MainWindow::on_TODO_list_itemClicked(QTreeWidgetItem *item, int column)
     cal_man.selected_todo.summary = item->text(0);
     cal_man.selected_todo.due_to = QDateTime::fromString(item->text(1),"yyyy-MM-dd");
     cal_man.selected_cal_name = item->text(2);
-    cal_man.selected_todo.UID = item->text(3);
+    cal_man.selected_todo.UID = item->text(4);
+    cal_man.selected_todo.completed = (item->text(3) != "Due");
     ui->textTODOedit->setText(item->text(0));
     auto s = item->text(1).toStdString();
     auto date = QDate::fromString(QString::fromStdString(s),"yyyy-MM-dd");
 
     ui->dateTODOedit->setDate(date);
+    ui->checkCompleted->setChecked(cal_man.selected_todo.completed);
     ui->editTodoButton->setEnabled(true);
     ui->deleteTodoButton->setEnabled(true);
     ui->error_TODO_edit->hide();
@@ -959,9 +965,11 @@ void MainWindow::on_deleteTodoButton_clicked()
 void MainWindow::on_editTodoButton_clicked()
 {
     ui->stackedWidget->setCurrentIndex(4);
+    ui->checkCompleted->setChecked(false);
 }
 
-void MainWindow::editTODO(QString user, QString calendar_name, QString summary, QDateTime new_due, QString uid) {
+void MainWindow::editTODO(QString user, QString calendar_name, QString summary,
+                          QDateTime new_due, QString uid, bool completed) {
 
     QNetworkAccessManager *manager = new QNetworkAccessManager();
 
@@ -981,9 +989,12 @@ void MainWindow::editTODO(QString user, QString calendar_name, QString summary, 
             "BEGIN:VTODO\n"
             "UID:" + uid + "\n"
             "SUMMARY:" + summary + "\n"
-            "DUE;VALUE=DATE:" + new_due.toString("yyyyMMdd") + "\n"
-            "END:VTODO\n"
-            "END:VCALENDAR\n";
+            "DUE;VALUE=DATE:" + new_due.toString("yyyyMMdd");
+    if (completed){
+        request_report.append("\nCOMPLETED:");
+        request_report.append(QDateTime::currentDateTime().toString("yyyyMMddTHHmmss"));
+    }
+    request_report.append("\nEND:VTODO\nEND:VCALENDAR\n");
 
     QByteArray converted_report = request_report.toUtf8();
 
@@ -995,6 +1006,7 @@ void MainWindow::editTODO(QString user, QString calendar_name, QString summary, 
 
     cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].due_to = new_due;
     cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].summary = summary;
+    // cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].completed = completed;
 
 }
 
@@ -1011,8 +1023,8 @@ void MainWindow::on_backSAVEedit_clicked()
         ui->error_TODO_edit->show();
         ui->success_TODO_edit->hide();
     } else {
-
-        editTODO(ui->username_login->text(), cal_man.selected_cal_name, ui->textTODOedit->toPlainText(), ui->dateTODOedit->dateTime(), cal_man.selected_todo.UID);
+        editTODO(ui->username_login->text(), cal_man.selected_cal_name, ui->textTODOedit->toPlainText(),
+                 ui->dateTODOedit->dateTime(), cal_man.selected_todo.UID, ui->checkCompleted->isChecked());
 
         // replace task with new version
         delete ui->TODO_list->currentItem();
@@ -1020,7 +1032,13 @@ void MainWindow::on_backSAVEedit_clicked()
         newItem->setText(0,ui->textTODOedit->toPlainText());
         newItem->setText(1,ui->dateTODOedit->dateTime().toString("yyyy-MM-dd"));
         newItem->setText(2,cal_man.selected_cal_name);
-        newItem->setText(3,cal_man.selected_todo.UID);
+        newItem->setText(4,cal_man.selected_todo.UID);
+        if(ui->checkCompleted->isChecked()){
+            newItem->setText(3, "Completed");
+        }
+        else{
+            newItem->setText(3, "Due");
+        }
         ui->TODO_list->addTopLevelItem(newItem);
 
         ui->success_TODO_edit->show();
@@ -1037,7 +1055,7 @@ void MainWindow::startSynchronization(){
 
     qDebug() << "Timer went off - starting synchronization";
 
-    connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(needUpdate(QNetworkReply*)));
+    connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(handle_synch_reply(QNetworkReply*)));
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
 
     QNetworkRequest request;
@@ -1063,11 +1081,14 @@ void MainWindow::startSynchronization(){
     qDebug() << "[Login] " << reply;
 }
 
-void MainWindow::needUpdate(QNetworkReply *reply){
+void MainWindow::handle_synch_reply(QNetworkReply *reply){
 
     QString replyData = reply -> readAll();
 
     qDebug() << "Timer went off - checking for updates";
+
+    qsizetype first_cal = replyData.indexOf("<d:response>");
+    replyData.remove(0, first_cal + 12);
 
     for (QString partial_reply : replyData.split("<d:response>")){
         qsizetype start_ctag = partial_reply.indexOf("<cs:getctag>");
@@ -1083,15 +1104,17 @@ void MainWindow::needUpdate(QNetworkReply *reply){
         QString user_cal = partial_reply.section("/</d:href>", 0, 0);
         QString cal_name = user_cal.section("/", 1, 1);
 
-        QString old_ctag = QString::fromStdString(cal_man.calendars[cal_name.toStdString()].ctag);
+        QString old_ctag;
 
-        if (old_ctag != ctag){
-            getAllEvents(cal_man.user, cal_man.password, cal_name);
+        if(cal_name != "inbox" && cal_name != "outbox") { // disable nextcloud default inbox/outbox
+            old_ctag = QString::fromStdString(cal_man.calendars[cal_name.toStdString()].ctag);
+            if (old_ctag != ctag){
+                getAllEvents(cal_man.user, cal_man.password, cal_name);
+            }
         }
-
     }
     // at the end, restart timer
-    cal_man.synch_timer.start();
+    synch_timer->start();
 }
 
 void MainWindow::on_new_calendar_btn_clicked()
@@ -1185,12 +1208,35 @@ void MainWindow::deleteCalendar_slot(QNetworkReply* reply) {
 
         if (cal_man.selected_cal.is_todo) {
             ui->vtodo_list->removeItem(ui->vtodo_list->findText(QString::fromStdString(cal_man.selected_cal.name), Qt::MatchExactly));
+            ui->TODO_list->clear(); // clear todos shown
+            // show them all again
+            // not optimized but does not show delays
+            for (auto cal : cal_man.calendars){
+                if (cal.second.is_todo){
+                    for (auto task : cal.second.todos){
+                        Todo todo = task.second;
+                        QTreeWidgetItem *newItem = new QTreeWidgetItem();
+                        newItem->setText(0,todo.summary);
+                        newItem->setText(1,todo.due_to.toString("yyyy-MM-dd"));
+                        newItem->setText(2,QString::fromStdString(cal.second.name));
+                        newItem->setText(4,todo.UID);
+                        if (todo.completed){
+                            newItem->setText(3, "Completed");
+                        }
+                        else {
+                            newItem->setText(3, "Due");
+                        }
+                        ui->TODO_list->addTopLevelItem(newItem);
+                    }
+                }
+            }
         } else {
             ui->vevent_list->removeItem(ui->vevent_list->findText(QString::fromStdString(cal_man.selected_cal.name), Qt::MatchExactly));
         }
 
         ui->delete_calendar_btn->setEnabled(false);
 
+        cal_man.calendars.erase(cal_man.selected_cal.name);
     }
     else {
         qDebug() << "[Failure]" << reply -> errorString();
@@ -1297,12 +1343,10 @@ void MainWindow::share_calendar(std::string usr, std::string pwd, std::string ca
 
 }
 
-
 void MainWindow::on_share_calendar_btn_clicked()
 {
     ui->stackedWidget->setCurrentIndex(6);
 }
-
 
 void MainWindow::on_share_cal_goback_clicked()
 {
@@ -1310,7 +1354,6 @@ void MainWindow::on_share_cal_goback_clicked()
     ui->share_cal_success->hide();
     ui->share_cal_error->hide();
 }
-
 
 void MainWindow::on_share_cal_go_clicked()
 {
