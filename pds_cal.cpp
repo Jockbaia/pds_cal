@@ -28,7 +28,7 @@
 #include <chrono>
 #include <thread>
 
-#define SECONDS 10
+#define SECONDS 5
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -482,9 +482,6 @@ bool MainWindow::get_calendars(std::string usr, std::string pwd) {
     QString response = reply->readAll();
     qDebug() << "[Login] " << reply;
 
-    // first activation of the timer
-    // synch_timer->start();
-
     return true;
 
 }
@@ -505,6 +502,8 @@ void MainWindow::getCalendars_slot(QNetworkReply* reply) {
         qDebug() << "[Logged]";
         QString strReply = (QString)reply->readAll();
         parse_request(strReply);
+        // first activation of the timer
+        synch_timer->start();
     }
     else {
         qDebug() << "[Failure]" << reply -> errorString();
@@ -1085,31 +1084,44 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
 
     QString replyData = reply -> readAll();
 
-    qDebug() << "Timer went off - checking for updates";
-
     qsizetype first_cal = replyData.indexOf("<d:response>");
     replyData.remove(0, first_cal + 12);
 
     for (QString partial_reply : replyData.split("<d:response>")){
+
+        qsizetype start_display_name = partial_reply.indexOf("<d:displayname>");
+        start_display_name += 15;
+        qsizetype end_display_name = partial_reply.indexOf("</d:displayname>");
         qsizetype start_ctag = partial_reply.indexOf("<cs:getctag>");
+        start_ctag += 12;
         qsizetype end_ctag = partial_reply.indexOf("</cs:getctag>");
         qsizetype start_cal_name = partial_reply.indexOf("<d:href>/remote.php/dav/calendars/");
-        // qsizetype end_cal_name = partial_reply.indexOf("/</d:href>");
+        start_cal_name += 34;
+        qsizetype end_cal_name = partial_reply.indexOf("/</d:href>");
 
-        partial_reply.remove(0, start_ctag + 12); // remove what's before the ctag
-        QString ctag = partial_reply.section("</cs:getctag>", 0, 0);    // get what's before </cs...>
-        partial_reply.remove(0, end_ctag + 13); // remove until end of ctag field
+        //partial_reply.remove(0, start_display_name + 15);
+        //QString display_name = partial_reply.sliced(start_display_name, end_display_name - start_display_name);
 
-        partial_reply.remove(0, start_cal_name + 34);
-        QString user_cal = partial_reply.section("/</d:href>", 0, 0);
+        //partial_reply.remove(0, start_ctag + 12); // remove what's before the ctag
+
+        QString user_cal = partial_reply.sliced(start_cal_name, end_cal_name - start_cal_name);
         QString cal_name = user_cal.section("/", 1, 1);
 
         QString old_ctag;
 
-        if(cal_name != "inbox" && cal_name != "outbox") { // disable nextcloud default inbox/outbox
-            old_ctag = QString::fromStdString(cal_man.calendars[cal_name.toStdString()].ctag);
-            if (old_ctag != ctag){
+        if(cal_name != "inbox" && cal_name != "outbox") {
+            if (cal_man.calendars.find(cal_name.toStdString()) == cal_man.calendars.end()){
                 getAllEvents(cal_man.user, cal_man.password, cal_name);
+
+            }
+            else{
+                QString ctag = partial_reply.sliced(start_ctag, end_ctag - start_ctag);
+                QString display_name = partial_reply.sliced(start_display_name, end_display_name - start_display_name);
+                old_ctag = QString::fromStdString(cal_man.calendars[cal_name.toStdString()].ctag);
+                if (old_ctag != ctag){
+                    qDebug() << "CTAG changed";
+                    getAllEvents(cal_man.user, cal_man.password, cal_name);
+                }
             }
         }
     }
