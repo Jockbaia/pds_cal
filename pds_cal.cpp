@@ -1322,15 +1322,12 @@ void MainWindow::share_calendar(std::string usr, std::string pwd, std::string ca
                                  "    <D:sharee>\n"
                                  "        <D:href>mailto:" + mail + "</D:href>\n"
                                  "        <D:prop>\n"
-                                 "            <D:displayname>" + calendar_name + " (shared by " + usr + ")</D:displayname>\n"
+                                 "            <D:displayname>" + calendar_name + "</D:displayname>\n"
                                  "        </D:prop>\n"
                                  "        <D:share-access>\n"
-                                 "            <D:???? />\n"
+                                 "            <D:read-write />\n"
                                  "        </D:share-access>\n"
                                  "    </D:sharee>\n"
-                                 "    <D:prop>"
-                                 "        <D:displayname />"
-                                 "    </D:prop>"
                                  "</D:share-resource>";
 
     QByteArray request_share;
@@ -1339,8 +1336,6 @@ void MainWindow::share_calendar(std::string usr, std::string pwd, std::string ca
     QNetworkReply *reply = manager->sendCustomRequest(request,"POST", request_share);
     QString response = reply->readAll();
     qDebug() << "[Sharing calendar] " << reply;
-
-
 }
 
 void MainWindow::on_share_calendar_btn_clicked()
