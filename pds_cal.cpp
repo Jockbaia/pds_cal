@@ -301,6 +301,11 @@ void MainWindow::parse_vcalendar(QString data) {
             my_todo.due_to = QDateTime::fromString(ts_due,"yyyyMMdd");
             my_todo.creation_date = QDateTime::fromString(ts_tst,"yyyyMMddTHHmmss");
 
+            std::string s2 = "COMPLETED";
+            if (calendar_data[i].find(s2) != std::string::npos) {
+                my_todo.completed = true;
+            } else my_todo.completed = false;
+
             cal_man.calendars[cal_name].todos[my_todo.UID.toStdString()] = my_todo;
 
             // Putting task on TODO
@@ -310,7 +315,10 @@ void MainWindow::parse_vcalendar(QString data) {
             newItem->setText(1,my_todo.due_to.toString("yyyy-MM-dd"));
             newItem->setText(2,QString::fromStdString(cal_name));
             newItem->setText(4,my_todo.UID);
-            newItem->setText(3, "Due");
+
+            if(my_todo.completed == false) newItem->setText(3, "Due");
+            else newItem->setText(3, "Completed");
+
             ui->TODO_list->addTopLevelItem(newItem);
         }
 
@@ -976,6 +984,7 @@ void MainWindow::editTODO(QString user, QString calendar_name, QString summary,
 
     cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].due_to = new_due;
     cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].summary = summary;
+    if(completed) cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].completed = true;
 
 }
 

@@ -11,6 +11,7 @@ Todo::Todo(const Todo &other){
     summary = other.summary;
     creation_date = other.creation_date;
     due_to = other.due_to;
+    completed = other.completed;
 }
 
 Todo& Todo::operator=(const Todo &other){
@@ -18,6 +19,7 @@ Todo& Todo::operator=(const Todo &other){
     summary = other.summary;
     creation_date = other.creation_date;
     due_to = other.due_to;
+    completed = other.completed;
 
     return *this;
 }
