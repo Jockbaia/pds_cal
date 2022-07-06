@@ -12,7 +12,6 @@ public:
     explicit CalendarManager(QObject *parent = nullptr);
     CalendarManager(const CalendarManager& other);
 
-    QTimer synch_timer;
     QString user;
     QString password;
 

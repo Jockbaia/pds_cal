@@ -19,7 +19,6 @@ public:
     QDateTime timestamp_start;
     QDateTime timestamp_end;
     QDateTime creation_date;
-    QObject* cal_ptr;
 
     const QString toString();
 
