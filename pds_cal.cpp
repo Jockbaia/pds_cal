@@ -28,7 +28,7 @@
 #include <chrono>
 #include <thread>
 
-#define SECONDS 5
+#define SECONDS 10
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -1083,11 +1083,17 @@ void MainWindow::startSynchronization(){
 void MainWindow::handle_synch_reply(QNetworkReply *reply){
 
     QString replyData = reply -> readAll();
+    // qDebug() << replyData;
 
     qsizetype first_cal = replyData.indexOf("<d:response>");
-    replyData.remove(0, first_cal + 12);
+    replyData.remove(0, first_cal + 12);    // remove header
 
-    for (QString partial_reply : replyData.split("<d:response>")){
+    auto responses = replyData.split("<d:response>");
+    responses.removeLast(); // for some reason, getAllEvents fails on "Deck: Personal"
+    // Deck: Personal is not read in the first request, because of how the for cycle is written (see parse request I think)
+
+
+    for (QString partial_reply : responses){
 
         qsizetype start_display_name = partial_reply.indexOf("<d:displayname>");
         start_display_name += 15;
@@ -1109,7 +1115,7 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
 
         QString old_ctag;
 
-        if(cal_name != "inbox" && cal_name != "outbox") {
+        if(cal_name != "inbox" && cal_name != "outbox" && cal_name != "") {
             if (cal_man.calendars.find(cal_name.toStdString()) == cal_man.calendars.end()){
                 getAllEvents(cal_man.user, cal_man.password, cal_name);
 
