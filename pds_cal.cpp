@@ -1125,6 +1125,7 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
                 QString display_name = partial_reply.sliced(start_display_name, end_display_name - start_display_name);
                 old_ctag = QString::fromStdString(cal_man.calendars[cal_name.toStdString()].ctag);
                 if (old_ctag != ctag){
+                    cal_man.calendars.erase(cal_name.toStdString()); // erase old
                     qDebug() << "CTAG changed";
                     getAllEvents(cal_man.user, cal_man.password, cal_name);
                 }
