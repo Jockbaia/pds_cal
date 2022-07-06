@@ -220,6 +220,9 @@ void MainWindow::parse_vcalendar(QString data) {
         calendar_data.push_back(token);
     }
 
+    if(!s.empty()) calendar_data.push_back(s);
+
+
     // creazione calendario locale
 
     if (calendar_data.empty()) {
@@ -324,6 +327,8 @@ void MainWindow::parse_vcalendar(QString data) {
 
     cal_man.calendars[cal_name].color = cal_color;
     cal_man.calendars[cal_name].is_shown = true;
+    cal_man.calendars[cal_name].name = cal_name;
+    cal_man.calendars[cal_name].display_name = cal_name;
 
     // Putting calendar in list
 
@@ -1333,7 +1338,7 @@ void MainWindow::share_calendar(std::string usr, std::string pwd, std::string ca
     request.setUrl(QUrl(my_qurl));
     request.setRawHeader("Depth", "1");
     request.setRawHeader("Prefer", "return-minimal");
-    request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
+    request.setRawHeader("Content-Type", "application/davsharing+xml; charset=utf-8");
     std::string cal_type;
 
     std::string req_share = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"

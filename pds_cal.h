@@ -58,6 +58,9 @@ private slots:
     void on_editTodoButton_clicked();
     void on_backTODOedit_clicked();
     void on_backSAVEedit_clicked();
+    void on_share_calendar_btn_clicked();
+    void on_share_cal_goback_clicked();
+    void on_share_cal_go_clicked();
 
     // auth
 
@@ -104,11 +107,7 @@ private slots:
     void handle_synch_reply(QNetworkReply*);
 
 
-    void on_share_calendar_btn_clicked();
 
-    void on_share_cal_goback_clicked();
-
-    void on_share_cal_go_clicked();
 
 protected slots:
 
@@ -119,4 +118,5 @@ private:
     CalendarManager cal_man;
     QTimer* synch_timer;
 };
+
 #endif // PDS_CAL_H
