@@ -107,16 +107,10 @@ void MainWindow::showEventsOnDate(QDate date){
     ui->selectedDate->setText(date.toString());
     ui->listOfEvents->clear();
     QList<Event> toShow = getEventsOnDate(date);
-    /*if (toShow.isEmpty()){
-        // ui->eventsList->setPlainText("No events to show for this date");
-        return;
-    }*/
+
     for (Event e : toShow){
         ui->listOfEvents->addItem(e.toString());
     }
-
-    // ui->eventsList->setPlainText(toShow);
-    //ui->eventsList->insertPlainText(eventsListToString(getEventsOnDate(date)));
 }
 
 QList<Event> MainWindow::getEventsOnDate(QDate date){
@@ -196,8 +190,6 @@ void MainWindow::on_getButton_clicked()
 
     login(user.toStdString(), password.toStdString());
     createTODO(user, calendar_name, summary, endDateTime);
-    // getAllEvents(user, password, calendar_name);
-    // deleteEvent(user, password, calendar_name, uid);
 
 }
 
@@ -512,11 +504,9 @@ void MainWindow::getCalendars_slot(QNetworkReply* reply) {
 }
 
 void MainWindow::do_authentication(QNetworkReply *, QAuthenticator *q) {
-    //q->setUser(ui->username_login->text());
-    //q->setPassword(ui->password_login->text());
-    q->setUser(cal_man.user);
-    q->setPassword(cal_man.password);
-    }
+    q->setUser(ui->username_login->text());
+    q->setPassword(ui->password_login->text());
+}
 
 void MainWindow::getAllEvents(QString user, QString pass, QString calendar_name) {
 
@@ -573,7 +563,6 @@ void MainWindow::deleteEvent(QString user, QString pass, QString calendar_name, 
 
     qDebug() << "Deleting" << request.url();
     QNetworkReply *reply = manager->deleteResource(request);
-    // QString response = reply->readAll();
     qDebug() << "[Deleting Event] " << reply;
 
     // Elimino evento localmente
@@ -763,7 +752,6 @@ void MainWindow::editEvent(QString user, QString uid, QString calendar_name, QSt
     e->summary = summary;
     e->timestamp_start = start_date_time;
     e->timestamp_end = end_date_time;
-    e->cal_ptr = &cal_man.calendars[calendar_name.toStdString()];
 }
 
 void MainWindow::on_displayedCalendar_clicked(const QDate &date)
@@ -771,13 +759,11 @@ void MainWindow::on_displayedCalendar_clicked(const QDate &date)
     showEventsOnDate(date);
 }
 
-
 void MainWindow::on_editButton_clicked()
 {
     ui->stackedWidget->setCurrentIndex(2);
 
 }
-
 
 void MainWindow::on_closeEditButton_clicked()
 {
@@ -822,24 +808,17 @@ void MainWindow::on_confirmEditButton_clicked()
         }
     }
 
-    //debug
-    /*if (cal_name == ""){
-        qDebug() << "ERROR: DID NOT FIND CALENDAR CONTAINING UID: " << uid;
-    }
-    else{
-        qDebug() << "CALENDAR FOUND FOR REQUESTED UID: cn " << cal_name << ", dn " << display_name;
-    }*/
     if (summary.isEmpty() || start_date_time > end_date_time) {
         ui -> successEdit -> hide();
         ui -> errorEdit -> show();
     } else {
         editEvent(user, uid, cal_name, summary, start_date_time, end_date_time);
+        showEventsOnDate(ui->displayedCalendar->selectedDate());
         ui -> successEdit -> show();
         ui -> errorEdit -> hide();
     }
 
 }
-
 
 void MainWindow::on_cancelEditButton_clicked()
 {
@@ -848,12 +827,10 @@ void MainWindow::on_cancelEditButton_clicked()
     ui->successEdit->hide();
 }
 
-
 void MainWindow::on_deleteButton_clicked()
 {
     ui->stackedWidget->setCurrentIndex(3);
 }
-
 
 void MainWindow::on_goBackButton_clicked()
 {
@@ -861,7 +838,6 @@ void MainWindow::on_goBackButton_clicked()
     ui->errorDelete->hide();
     ui->successDelete->hide();
 }
-
 
 void MainWindow::on_confirmDelete_clicked()
 {
@@ -888,7 +864,6 @@ void MainWindow::on_confirmDelete_clicked()
     QString cal_name = "";
     QString display_name = "";
 
-    // TODO: Inserire selezione calendario
     for (auto cal : cal_man.calendars){
         Calendar c = cal.second;
         if (c.events.find(s) != c.events.end()){
@@ -897,19 +872,12 @@ void MainWindow::on_confirmDelete_clicked()
         }
     }
 
-    //debug
-    /*if (cal_name == ""){
-        qDebug() << "ERROR: DID NOT FIND CALENDAR CONTAINING UID: " << uid;
-    }
-    else{
-        qDebug() << "CALENDAR FOUND FOR REQUESTED UID: cn " << cal_name << ", dn " << display_name;
-    }*/
     deleteEvent(user, password, cal_name, uid);
+    showEventsOnDate(ui->displayedCalendar->selectedDate());
     ui -> successDelete -> show();
     ui -> errorDelete -> hide();
 
 }
-
 
 void MainWindow::on_listOfEvents_itemClicked(QListWidgetItem *item)
 {
@@ -928,7 +896,6 @@ void MainWindow::on_listOfEvents_itemClicked(QListWidgetItem *item)
     ui->endDateTimeEdit->setDateTime(QDateTime::fromString(end, "dd.MM.yyyy hh:mm"));
 
 }
-
 
 void MainWindow::on_TODO_list_itemClicked(QTreeWidgetItem *item, int column)
 {
@@ -981,7 +948,6 @@ void MainWindow::editTODO(QString user, QString calendar_name, QString summary,
     request.setUrl(QUrl(myUrl));
     request.setRawHeader("Depth", "1");
     request.setRawHeader("Prefer", "return-minimal");
-    // request.setRawHeader("If-None-Match", "*");
     request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
 
     QString request_report = "BEGIN:VCALENDAR\n"
@@ -1005,7 +971,6 @@ void MainWindow::editTODO(QString user, QString calendar_name, QString summary,
 
     cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].due_to = new_due;
     cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].summary = summary;
-    // cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].completed = completed;
 
 }
 
@@ -1052,8 +1017,6 @@ void MainWindow::startSynchronization(){
 
     QNetworkAccessManager *manager = new QNetworkAccessManager();
 
-    qDebug() << "Timer went off - starting synchronization";
-
     connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(handle_synch_reply(QNetworkReply*)));
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
 
@@ -1083,7 +1046,6 @@ void MainWindow::startSynchronization(){
 void MainWindow::handle_synch_reply(QNetworkReply *reply){
 
     QString replyData = reply -> readAll();
-    // qDebug() << replyData;
 
     qsizetype first_cal = replyData.indexOf("<d:response>");
     replyData.remove(0, first_cal + 12);    // remove header
@@ -1092,6 +1054,7 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
     responses.removeLast(); // for some reason, getAllEvents fails on "Deck: Personal"
     // Deck: Personal is not read in the first request, because of how the for cycle is written (see parse request I think)
 
+    QList<QString> cal_to_update;
 
     for (QString partial_reply : responses){
 
@@ -1105,16 +1068,10 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
         start_cal_name += 34;
         qsizetype end_cal_name = partial_reply.indexOf("/</d:href>");
 
-        //partial_reply.remove(0, start_display_name + 15);
-        //QString display_name = partial_reply.sliced(start_display_name, end_display_name - start_display_name);
-
-        //partial_reply.remove(0, start_ctag + 12); // remove what's before the ctag
-
         QString user_cal = partial_reply.sliced(start_cal_name, end_cal_name - start_cal_name);
         QString cal_name = user_cal.section("/", 1, 1);
 
         QString old_ctag;
-
         if(cal_name != "inbox" && cal_name != "outbox" && cal_name != "") {
             if (cal_man.calendars.find(cal_name.toStdString()) == cal_man.calendars.end()){
                 getAllEvents(cal_man.user, cal_man.password, cal_name);
@@ -1125,12 +1082,19 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
                 QString display_name = partial_reply.sliced(start_display_name, end_display_name - start_display_name);
                 old_ctag = QString::fromStdString(cal_man.calendars[cal_name.toStdString()].ctag);
                 if (old_ctag != ctag){
-                    cal_man.calendars.erase(cal_name.toStdString()); // erase old
+                    clear_and_show_todos_again();
+                    clear_and_show_calendars_again();
+                    cal_man.calendars[cal_name.toStdString()].eraseContent(); // erase content old calendar
+                    cal_man.calendars[cal_name.toStdString()].ctag = ctag.toStdString();
                     qDebug() << "CTAG changed";
-                    getAllEvents(cal_man.user, cal_man.password, cal_name);
+                    cal_to_update.append(cal_name);
+
                 }
             }
         }
+    }
+    for (auto cal : cal_to_update){
+        getAllEvents(cal_man.user, cal_man.password, cal);
     }
     // at the end, restart timer
     synch_timer->start();
@@ -1219,6 +1183,54 @@ void MainWindow::createCalendar_slot(QNetworkReply* reply) {
     }
 }
 
+
+void MainWindow::clear_and_show_todos_again(){
+    ui->TODO_list->clear(); // clear todos shown
+    // show them all again
+    for (auto cal : cal_man.calendars){
+        if (cal.second.is_todo){
+            for (auto task : cal.second.todos){
+                Todo todo = task.second;
+                QTreeWidgetItem *newItem = new QTreeWidgetItem();
+                newItem->setText(0,todo.summary);
+                newItem->setText(1,todo.due_to.toString("yyyy-MM-dd"));
+                newItem->setText(2,QString::fromStdString(cal.second.name));
+                newItem->setText(4,todo.UID);
+                if (todo.completed){
+                    newItem->setText(3, "Completed");
+                }
+                else {
+                    newItem->setText(3, "Due");
+                }
+                ui->TODO_list->addTopLevelItem(newItem);
+            }
+        }
+    }
+}
+
+void MainWindow::clear_and_show_calendars_again(){
+    ui->cal_list->clear(); // clear calendars shown
+    // show them all again
+    for (auto calendar : cal_man.calendars){
+        Calendar cal = calendar.second;
+        QTreeWidgetItem *item = new QTreeWidgetItem();
+        item->setText(0, QString::fromStdString(cal.name));
+        if (cal.is_todo){
+            item->setText(1, QString::fromStdString("Tasks"));
+        }
+        else {
+            item->setText(1, QString::fromStdString("Calendar"));
+        }
+        if (cal.is_shown){
+            item->setText(2, QString::fromStdString("Show"));
+        }
+        else{
+            item->setText(2, QString::fromStdString("Hide"));
+        }
+    }
+}
+
+
 void MainWindow::deleteCalendar_slot(QNetworkReply* reply) {
     if (reply->error() == QNetworkReply::NoError) {
         qDebug() << "[Deleted]";
@@ -1227,28 +1239,7 @@ void MainWindow::deleteCalendar_slot(QNetworkReply* reply) {
 
         if (cal_man.selected_cal.is_todo) {
             ui->vtodo_list->removeItem(ui->vtodo_list->findText(QString::fromStdString(cal_man.selected_cal.name), Qt::MatchExactly));
-            ui->TODO_list->clear(); // clear todos shown
-            // show them all again
-            // not optimized but does not show delays
-            for (auto cal : cal_man.calendars){
-                if (cal.second.is_todo){
-                    for (auto task : cal.second.todos){
-                        Todo todo = task.second;
-                        QTreeWidgetItem *newItem = new QTreeWidgetItem();
-                        newItem->setText(0,todo.summary);
-                        newItem->setText(1,todo.due_to.toString("yyyy-MM-dd"));
-                        newItem->setText(2,QString::fromStdString(cal.second.name));
-                        newItem->setText(4,todo.UID);
-                        if (todo.completed){
-                            newItem->setText(3, "Completed");
-                        }
-                        else {
-                            newItem->setText(3, "Due");
-                        }
-                        ui->TODO_list->addTopLevelItem(newItem);
-                    }
-                }
-            }
+            clear_and_show_todos_again();
         } else {
             ui->vevent_list->removeItem(ui->vevent_list->findText(QString::fromStdString(cal_man.selected_cal.name), Qt::MatchExactly));
         }

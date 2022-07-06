@@ -111,7 +111,8 @@ private slots:
     void on_share_cal_go_clicked();
 
 protected slots:
-
+    void clear_and_show_todos_again();
+    void clear_and_show_calendars_again();
 
 private:
     Ui::pds_cal *ui;
