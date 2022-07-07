@@ -143,14 +143,21 @@ void MainWindow::on_createEventButton_clicked() {
     QString summary = ui-> event_title -> toPlainText();
     QDateTime startDateTime = ui -> start_date_time -> dateTime();
     QDateTime endDateTime = ui -> end_date_time -> dateTime();
+    QString cal_name;
+    QString cal_chosen = ui->vevent_list->currentText();
 
-    // TODO: Inserire selezione calendario
+    for (auto cal : cal_man.calendars){
+        if(cal.second.display_name == cal_chosen.toStdString()) {
+            cal_name = QString::fromStdString(cal.second.name);
+        }
+    }
 
-    if (summary.isEmpty() || startDateTime > endDateTime) {
+
+    if (summary.isEmpty() || startDateTime > endDateTime || cal_name.isEmpty()) {
         ui -> success_create_event -> hide();
         ui -> error_create_event -> show();
     } else {
-        createEvent(user, ui->vevent_list->currentText(), summary, startDateTime, endDateTime);
+        createEvent(user, cal_name, summary, startDateTime, endDateTime);
         ui -> success_create_event -> show();
         ui -> error_create_event -> hide();
     }
@@ -234,6 +241,15 @@ void MainWindow::parse_vcalendar(QString data) {
     }
 
     std::string cal_name = current_cal[4].substr(current_cal[4].find(":")).erase(0,1);
+    std::string display_name;
+
+    display_name = cal_name;
+
+    for (auto cal : cal_man.calendars){
+        if(cal.second.display_name == cal_name) {
+            cal_name = cal.second.name;
+        }
+    }
 
     // some events have a set color
     std::string cal_color;
@@ -333,7 +349,7 @@ void MainWindow::parse_vcalendar(QString data) {
     // Putting calendar in list
 
     QTreeWidgetItem *newItem = new QTreeWidgetItem();
-    newItem->setText(0,QString::fromStdString(cal_name));
+    newItem->setText(0,QString::fromStdString(display_name));
 
     if(cal_man.is_new) { // evento creato
         if(ui->create_cal_type->currentText() == "Calendar") {
