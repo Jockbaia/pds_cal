@@ -170,11 +170,19 @@ void MainWindow::on_createTodoButton_clicked()
     QString user = ui->username_login->text(); // UID evento di prova
     QString summary = ui->todo_summary->toPlainText();
     QDateTime dueDate = ui->todo_due->dateTime();
+    QString cal_name;
+    QString cal_chosen = ui->vtodo_list->currentText();
 
-    if(summary.isEmpty()) {
+    for (auto cal : cal_man.calendars){
+        if(cal.second.display_name == cal_chosen.toStdString()) {
+            cal_name = QString::fromStdString(cal.second.name);
+        }
+    }
+
+    if(summary.isEmpty() || cal_name.isEmpty()) {
         ui->error_TODO_create->show();
     } else {
-        createTODO(user, ui->vtodo_list->currentText(), summary, dueDate);
+        createTODO(user, cal_name, summary, dueDate);
         ui->error_TODO_create->hide();
     }
 
@@ -279,6 +287,7 @@ void MainWindow::parse_vcalendar(QString data) {
     // inserimento eventi calendario locale
 
     if(!is_empty) {
+        cal_man.is_new = false;
         if(calendar_data.size()>1 && calendar_data[1 + big_header_data].substr(0,4) == "VEVE") {
 
             for(int i=1 + big_header_data; i<calendar_data.size(); i++) {
@@ -408,7 +417,7 @@ void MainWindow::parse_vcalendar(QString data) {
             QTreeWidgetItem *newItem = new QTreeWidgetItem();
             newItem->setText(0,my_todo.summary);
             newItem->setText(1,my_todo.due_to.toString("yyyy-MM-dd"));
-            newItem->setText(2,QString::fromStdString(cal_name));
+            newItem->setText(2,QString::fromStdString(display_name));
             newItem->setText(4,my_todo.UID);
 
             if(my_todo.completed == false) newItem->setText(3, "Due");
@@ -423,7 +432,7 @@ void MainWindow::parse_vcalendar(QString data) {
     cal_man.calendars[cal_name].color = cal_color;
     cal_man.calendars[cal_name].is_shown = true;
     cal_man.calendars[cal_name].name = cal_name;
-    cal_man.calendars[cal_name].display_name = cal_name;
+    cal_man.calendars[cal_name].display_name = display_name;
 
     // Putting calendar in list
 
@@ -432,19 +441,19 @@ void MainWindow::parse_vcalendar(QString data) {
 
     if(cal_man.is_new) { // evento creato
         if(ui->create_cal_type->currentText() == "Calendar") {
-            ui->vevent_list->addItem(QString::fromStdString(cal_name));
+            ui->vevent_list->addItem(QString::fromStdString(display_name));
             newItem->setText(1,"Calendar");
         } else {
-            ui->vtodo_list->addItem(QString::fromStdString(cal_name));
+            ui->vtodo_list->addItem(QString::fromStdString(display_name));
             newItem->setText(1,"Tasks");
         }
     } else { // evento importato
         if(cal_man.calendars[cal_name].is_todo) {
             newItem->setText(1,"Tasks");
-            ui->vtodo_list->addItem(QString::fromStdString(cal_name));
+            ui->vtodo_list->addItem(QString::fromStdString(display_name));
         } else {
             newItem->setText(1,"Calendar");
-            ui->vevent_list->addItem(QString::fromStdString(cal_name));
+            ui->vevent_list->addItem(QString::fromStdString(display_name));
         }
         if(cal_man.calendars[cal_name].is_shown) newItem->setText(2,"Show");
         else newItem->setText(2,"Hide");
@@ -797,13 +806,14 @@ void MainWindow::createTODO(QString user, QString calendar_name, QString summary
     my_todo.creation_date = current_datetime;
     my_todo.completed = false; // makes no sense to create a todo when it's already done
     cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()] = my_todo;
+    QString display_name = QString::fromStdString(cal_man.calendars[calendar_name.toStdString()].display_name);
 
     // Putting task on TODO
 
     QTreeWidgetItem *newItem = new QTreeWidgetItem();
-    newItem->setText(0,my_todo.summary);
-    newItem->setText(1,my_todo.due_to.toString("yyyy-MM-dd"));
-    newItem->setText(2,calendar_name);
+    newItem->setText(0, my_todo.summary);
+    newItem->setText(1, my_todo.due_to.toString("yyyy-MM-dd"));
+    newItem->setText(2, display_name);
     newItem->setText(4, my_todo.UID);
     newItem->setText(3, "Due");
     ui->TODO_list->addTopLevelItem(newItem);
@@ -1093,12 +1103,23 @@ void MainWindow::on_backTODOedit_clicked()
 void MainWindow::on_backSAVEedit_clicked()
 {
 
+    QString cal_name;
+    QString display_name;
+
     QString myTitle = ui->textTODOedit->toPlainText();
-    if(myTitle.isEmpty()) {
+
+    for (auto cal : cal_man.calendars){
+        if(cal.second.display_name == cal_man.selected_cal_name.toStdString()) {
+            cal_name = QString::fromStdString(cal.second.name);
+            display_name = QString::fromStdString(cal.second.display_name);
+        }
+    }
+
+    if(myTitle.isEmpty() || cal_name.isEmpty()) {
         ui->error_TODO_edit->show();
         ui->success_TODO_edit->hide();
     } else {
-        editTODO(ui->username_login->text(), cal_man.selected_cal_name, ui->textTODOedit->toPlainText(),
+        editTODO(ui->username_login->text(), cal_name, ui->textTODOedit->toPlainText(),
                  ui->dateTODOedit->dateTime(), cal_man.selected_todo.UID, ui->checkCompleted->isChecked());
 
         // replace task with new version
@@ -1106,7 +1127,7 @@ void MainWindow::on_backSAVEedit_clicked()
         QTreeWidgetItem *newItem = new QTreeWidgetItem();
         newItem->setText(0,ui->textTODOedit->toPlainText());
         newItem->setText(1,ui->dateTODOedit->dateTime().toString("yyyy-MM-dd"));
-        newItem->setText(2,cal_man.selected_cal_name);
+        newItem->setText(2,display_name);
         newItem->setText(4,cal_man.selected_todo.UID);
         if(ui->checkCompleted->isChecked()){
             newItem->setText(3, "Completed");
@@ -1383,7 +1404,16 @@ void MainWindow::on_cal_list_itemClicked(QTreeWidgetItem *item, int column)
 
 void MainWindow::on_delete_calendar_btn_clicked()
 {
-    delete_calendar(ui->username_login->text().toStdString(), ui->password_login->text().toStdString(), cal_man.selected_cal.name);
+
+    QString cal_name;
+
+    for (auto cal : cal_man.calendars){
+        if(cal.second.display_name == cal_man.selected_cal.display_name) {
+            cal_name = QString::fromStdString(cal.second.name);
+        }
+    }
+
+    delete_calendar(ui->username_login->text().toStdString(), ui->password_login->text().toStdString(), cal_name.toStdString());
 }
 
 void MainWindow::delete_calendar(std::string usr, std::string pwd, std::string calendar_name) {

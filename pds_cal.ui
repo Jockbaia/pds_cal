@@ -176,7 +176,7 @@ padding-left: 5px;</string>
        </rect>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="Calendario">
        <attribute name="title">
