@@ -70,6 +70,16 @@ MainWindow::MainWindow(QWidget *parent)
     ui->editButton->setEnabled(false);
     ui->deleteButton->setEnabled(false);
     ui->login_error->hide();
+    ui->cloud_changes->hide();
+    ui->cloud_changes_2->hide();
+    ui->cloud_changes_3->hide();
+    ui->cloud_changes_4->hide();
+    ui->cloud_changes_5->hide();
+    ui->cloud_changes_6->hide();
+    ui->cloud_changes_7->hide();
+    ui->cloud_changes_8->hide();
+    ui->cloud_changes_9->hide();
+    ui->cloud_changes_10->hide();
 
     connect(ui->displayedCalendar, SIGNAL(QCalendarWidget::activated(QDate)),
                      this, SLOT(MainWindow::on_displayedCalendar_clicked(QDate)));
@@ -117,7 +127,7 @@ QList<Event> MainWindow::getEventsOnDate(QDate date){
             Event e = ev.second;
             if (e.timestamp_start.date() == date ||
                     e.timestamp_end.date() == date){
-                // the event either starts or ends (or both) on the requested date
+                // The event either starts or ends (or both) on the requested date
                 toReturn.append(e);
             }
         }
@@ -148,7 +158,6 @@ void MainWindow::on_createEventButton_clicked() {
         }
     }
 
-
     if (summary.isEmpty() || startDateTime > endDateTime || cal_name.isEmpty()) {
         ui -> success_create_event -> hide();
         ui -> error_create_event -> show();
@@ -163,7 +172,7 @@ void MainWindow::on_createEventButton_clicked() {
 void MainWindow::on_createTodoButton_clicked()
 {
 
-    QString user = ui->username_login->text(); // UID evento di prova
+    QString user = ui->username_login->text();
     QString summary = ui->todo_summary->toPlainText();
     QDateTime dueDate = ui->todo_due->dateTime();
     QString cal_name;
@@ -181,25 +190,6 @@ void MainWindow::on_createTodoButton_clicked()
         createTODO(user, cal_name, summary, dueDate);
         ui->error_TODO_create->hide();
     }
-
-}
-
-void MainWindow::on_getButton_clicked()
-{
-
-    QString user = "progetto-pds";
-    QString password = "progetto-pds";
-    QString calendar_name = "test-1";
-    QString uid = "20220619-1506-0011-0000-202206101306"; // UID evento di prova
-    QString summary = "TEST TODO";
-    QDate start_date(2022, 06, 10);
-    QTime start_time(13, 30);
-    QTime end_time(15,00);
-
-    QDateTime endDateTime(start_date, end_time);
-
-    login(user.toStdString(), password.toStdString());
-    createTODO(user, calendar_name, summary, endDateTime);
 
 }
 
@@ -223,13 +213,13 @@ void MainWindow::parse_vcalendar(QString data) {
     if(!s.empty()) calendar_data.push_back(s);
 
 
-    // creazione calendario locale
+    // Creating calendar locally
 
     if (calendar_data.empty()) {
         is_empty = true;
         cal_data = data.toStdString();
-    } // calendario senza eventi
-    else {cal_data = calendar_data[0];} // calendario con eventi
+    } // Calendar with no events
+    else {cal_data = calendar_data[0];} // Calendar with events
     delimiter = "\r\n";
     std::vector<std::string> current_cal;
     size_t cal_pos = 0;
@@ -252,13 +242,13 @@ void MainWindow::parse_vcalendar(QString data) {
         }
     }
 
-    // some events have a set color
+    // Some events have a set color
 
     std::string cal_color;
     if(!cal_man.is_new) cal_color = current_cal[5].substr(current_cal[5].find(":")).erase(0,1);
     else cal_color = "#b33b3b";
 
-    // check sulle impostazioni extra di nextcloud
+    // Check extra nextcloud-driven settings
 
     int big_header_data = 0;
 
@@ -277,7 +267,7 @@ void MainWindow::parse_vcalendar(QString data) {
          big_header_data++;
     }
 
-    // inserimento eventi calendario locale
+    // Inserting events on local calendar
 
     if(!is_empty) {
         cal_man.is_new = false;
@@ -404,12 +394,12 @@ void MainWindow::parse_vcalendar(QString data) {
     cal_man.calendars[cal_name].name = cal_name;
     cal_man.calendars[cal_name].display_name = display_name;
 
-    // Putting calendar in list
+    // Inserting calendar on list
 
     QTreeWidgetItem *newItem = new QTreeWidgetItem();
     newItem->setText(0,QString::fromStdString(display_name));
 
-    if(cal_man.is_new) { // evento creato
+    if(cal_man.is_new) { // Created event
         if(ui->create_cal_type->currentText() == "Calendar") {
             ui->vevent_list->addItem(QString::fromStdString(display_name));
             newItem->setText(1,"Calendar");
@@ -417,7 +407,10 @@ void MainWindow::parse_vcalendar(QString data) {
             ui->vtodo_list->addItem(QString::fromStdString(display_name));
             newItem->setText(1,"Tasks");
         }
-    } else { // evento importato
+    } else {
+
+        // Imported event
+
         if(cal_man.calendars[cal_name].is_todo) {
             newItem->setText(1,"Tasks");
             ui->vtodo_list->addItem(QString::fromStdString(display_name));
@@ -434,6 +427,19 @@ void MainWindow::parse_vcalendar(QString data) {
     else newItem->setText(2,"Hide");
     ui->cal_list->addTopLevelItem(newItem);
     cal_man.is_new = false;
+
+    // Coming from a sync? Hide alerts!
+
+    ui->cloud_changes->hide();
+    ui->cloud_changes_2->hide();
+    ui->cloud_changes_3->hide();
+    ui->cloud_changes_4->hide();
+    ui->cloud_changes_5->hide();
+    ui->cloud_changes_6->hide();
+    ui->cloud_changes_7->hide();
+    ui->cloud_changes_8->hide();
+    ui->cloud_changes_9->hide();
+    ui->cloud_changes_10->hide();
 
 }
 
@@ -455,23 +461,23 @@ void MainWindow::parse_request(QString data) {
         request_data.push_back(token);
     }
 
-    for(int i=2; i<request_data.size(); i++) { // i=1 -> skip header
+    for(int i=2; i<request_data.size(); i++) { // i=1 -> Skip header
 
         std::cout << request_data[i] << std::endl;
 
-        // display_name
+        // Getting display_name
         unsigned first = request_data[i].find("<d:displayname>");
         unsigned end_first = first + 15;
         unsigned last = request_data[i].find("</d:displayname>");
         std::string display_name = request_data[i].substr(end_first,last - end_first);
 
-        // c_tag
+        // Getting c_tag
         first = request_data[i].find("<cs:getctag>");
         end_first = first + 12;
         last = request_data[i].find("</cs:getctag>");
         std::string ctag = request_data[i].substr(end_first,last - end_first);
 
-        // calendar_name
+        // Getting calendar_name
         first = request_data[i].find("<d:href>/remote.php/dav/calendars/");
         end_first = first + 34;
         last = request_data[i].find("/</d:href>");
@@ -482,7 +488,7 @@ void MainWindow::parse_request(QString data) {
         last = user_plus_cal.length();
         std::string calendar_name = user_plus_cal.substr(end_first,last - end_first);
 
-        if(calendar_name != "inbox" && calendar_name != "outbox") { // disable nextcloud default inbox/outbox
+        if(calendar_name != "inbox" && calendar_name != "outbox") { // Disabling nextcloud default inbox/outbox
             my_calendar.display_name = display_name;
             my_calendar.ctag = ctag;
             my_calendar.name = calendar_name;
@@ -492,10 +498,9 @@ void MainWindow::parse_request(QString data) {
 
     }
 
-    // end first loading: opening first window
+    // End of first loading: opening first window
 
     ui->stackedWidget->setCurrentIndex(1);
-
 
 }
 
@@ -598,7 +603,9 @@ void MainWindow::getCalendars_slot(QNetworkReply* reply) {
         qDebug() << "[Getting calendars]";
         QString strReply = (QString)reply->readAll();
         parse_request(strReply);
-        // first activation of the timer
+
+        // First activation of the timer
+
         synch_timer->start();
 
     }
@@ -673,7 +680,7 @@ void MainWindow::deleteEvent(QString user, QString pass, QString calendar_name, 
     QNetworkReply *reply = manager->deleteResource(request);
     qDebug() << "[Deleting Event] " << reply;
 
-    // Elimino evento localmente
+    // Deleting event locally
 
     cal_man.calendars[calendar_name.toStdString()].events.erase(uid.toStdString());
 
@@ -705,7 +712,7 @@ void MainWindow::deleteTODO(QString user, QString pass, QString calendar_name, Q
     QString response = reply->readAll();
     qDebug() << "[Deleting Event] " << reply;
 
-    // Elimino evento localmente
+    // Deleting event locally
 
     cal_man.calendars[calendar_name.toStdString()].todos.erase(uid.toStdString());
 
@@ -743,7 +750,7 @@ void MainWindow::createEvent(QString user, QString calendar_name, QString summar
     QString response = reply->readAll();
     qDebug() << "[Add Event] " << reply;
 
-    // Aggiungo evento localmente
+    // Adding event locally
 
     Event my_event;
     my_event.UID = uid;
@@ -788,14 +795,14 @@ void MainWindow::createTODO(QString user, QString calendar_name, QString summary
     QString response = reply->readAll();
     qDebug() << "[Add Event] " << reply;
 
-    // Aggiungo todo localmente
+    // Adding todo locally
 
     Todo my_todo;
     my_todo.UID = uid;
     my_todo.summary = summary;
     my_todo.due_to = end_date;
     my_todo.creation_date = current_datetime;
-    my_todo.completed = false; // makes no sense to create a todo when it's already done
+    my_todo.completed = false; // Makes no sense to create a todo when it's already done
     cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()] = my_todo;
     QString display_name = QString::fromStdString(cal_man.calendars[calendar_name.toStdString()].display_name);
 
@@ -836,7 +843,6 @@ void MainWindow::editEvent(QString user, QString uid, QString calendar_name, QSt
     request.setUrl(QUrl(myUrl));
     request.setRawHeader("Depth", "1");
     request.setRawHeader("Prefer", "return-minimal");
-    // request.setRawHeader("If-None-Match", "*");
     request.setRawHeader("Content-Type", "application/xml; charset=utf-8");
 
     QString request_report = "BEGIN:VCALENDAR\n"
@@ -908,7 +914,7 @@ void MainWindow::on_confirmEditButton_clicked()
     while ((pos = s.find(delimiter)) != std::string::npos) {
         s.erase(0, pos + delimiter.length());
     }
-    s.erase(s.length() - 1); // erase \n
+    s.erase(s.length() - 1); // Erase \n
     QString uid = QString::fromStdString(s);
     QString cal_name = "";
     QString display_name = "";
@@ -957,7 +963,9 @@ void MainWindow::on_goBackButton_clicked()
 void MainWindow::on_confirmDelete_clicked()
 {
     if (ui->listOfEvents->currentItem() == nullptr){
+
         // If no event is selected, show error message
+
         ui->errorDelete->show();
         ui->successDelete->hide();
         return;
@@ -967,6 +975,7 @@ void MainWindow::on_confirmDelete_clicked()
     QString password = ui->password_login->text();
 
     // Get uid from selected event in list
+
     QString event_data = ui->listOfEvents->currentItem()->text();
     std::string s = event_data.toStdString();
     std::string delimiter = "UID: ";
@@ -1083,7 +1092,7 @@ void MainWindow::editTODO(QString user, QString calendar_name, QString summary,
     QString response = reply->readAll();
     qDebug() << "[Add Event] " << reply;
 
-    // Modifico evento localmente
+    // Editing event locally
 
     cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].due_to = new_due;
     cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].summary = summary;
@@ -1118,7 +1127,8 @@ void MainWindow::on_backSAVEedit_clicked()
         editTODO(ui->username_login->text(), cal_name, ui->textTODOedit->toPlainText(),
                  ui->dateTODOedit->dateTime(), cal_man.selected_todo.UID, ui->checkCompleted->isChecked());
 
-        // replace task with new version
+        // Replacing task with new version
+
         delete ui->TODO_list->currentItem();
         QTreeWidgetItem *newItem = new QTreeWidgetItem();
         newItem->setText(0,ui->textTODOedit->toPlainText());
@@ -1188,7 +1198,7 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
 
         partial_reply = responses[i];
 
-        // getting displayname
+        // Getting displayname
         std::string this_reply = partial_reply.toStdString();
         unsigned first = this_reply.find("<d:displayname>");
         unsigned end_first = first + 15;
@@ -1197,7 +1207,7 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
 
         std::cout << display_name << std::endl;
 
-        // getting ctag
+        // Getting ctag
         first = this_reply.find("<cs:getctag>");
         end_first = first + 12;
         last = this_reply.find("</cs:getctag>");
@@ -1205,7 +1215,7 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
 
         std::cout << c_tag << std::endl;
 
-        // getting cal_name
+        // Getting cal_name
         first = this_reply.find("<d:href>/remote.php/dav/calendars/");
         end_first = first + 32;
         last = this_reply.find("/</d:href>");
@@ -1230,9 +1240,23 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
             } else {
                 old_ctag = QString::fromStdString(cal_man.calendars[cal_name].ctag);
                 if (old_ctag != QString::fromStdString(c_tag)){
+
+                    // showing alerts
+
+                    ui->cloud_changes->show();
+                    ui->cloud_changes_2->show();
+                    ui->cloud_changes_3->show();
+                    ui->cloud_changes_4->show();
+                    ui->cloud_changes_5->show();
+                    ui->cloud_changes_6->show();
+                    ui->cloud_changes_7->show();
+                    ui->cloud_changes_8->show();
+                    ui->cloud_changes_9->show();
+                    ui->cloud_changes_10->show();
+
                     clear_selected_todo(display_name);
                     clear_selected_cal(display_name);
-                    cal_man.calendars[cal_name].eraseContent(); // erase content old calendar
+                    cal_man.calendars[cal_name].eraseContent(); // Erase content from old calendar
                     cal_man.calendars[cal_name].ctag = c_tag;
                     cal_to_update.append(QString::fromStdString(cal_name));
 
@@ -1240,12 +1264,14 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
             }
         }
     }
+
     for (auto cal : cal_to_update){
         getAllEvents(cal_man.user, cal_man.password, cal);
     }
 
-    // at the end, restart timer
+    // Restart timer
 
+    ui->cloud_changes->hide();
     synch_timer->start();
 }
 
@@ -1374,6 +1400,7 @@ void MainWindow::clear_selected_cal(std::string display_name){
             item->setText(2, QString::fromStdString("Hide"));
         }
     }*/
+
 }
 
 

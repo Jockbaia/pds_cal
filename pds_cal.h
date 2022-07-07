@@ -79,7 +79,6 @@ private slots:
 
     // clicking buttons
 
-    void on_getButton_clicked();
     void on_loginButton_clicked();
     void on_createEventButton_clicked();
     void on_createTodoButton_clicked();

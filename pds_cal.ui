@@ -245,6 +245,19 @@ padding-left: 5px;</string>
        <string>✅ Loading calendars, please wait...</string>
       </property>
      </widget>
+     <widget class="QLabel" name="cloud_changes">
+      <property name="geometry">
+       <rect>
+        <x>610</x>
+        <y>0</y>
+        <width>181</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;☁️ Syncing changes with cloud...&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="page_2">
      <widget class="QTabWidget" name="tabWidget">
@@ -395,6 +408,22 @@ padding-left: 5px;</string>
         </property>
         <property name="text">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:700; color:#0078d7;&quot;&gt;⚙️ &lt;/span&gt;&lt;span style=&quot; font-size:8pt; font-weight:700; color:#0078d7;&quot;&gt;Parsing calendars, &lt;/span&gt;&lt;span style=&quot; font-size:8pt; font-weight:700; color:#0078d7;&quot;&gt;please wait&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="cloud_changes_2">
+        <property name="geometry">
+         <rect>
+          <x>610</x>
+          <y>0</y>
+          <width>181</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: white;</string>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;☁️ Syncing changes with cloud...&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
       </widget>
@@ -561,6 +590,22 @@ padding-left: 5px;</string>
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:700; color:#ffaa00;&quot;&gt;⚙️ Parsing tasks, please wait&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
+       <widget class="QLabel" name="cloud_changes_4">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>610</x>
+          <y>0</y>
+          <width>181</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#342708;&quot;&gt;☁️ Syncing changes with cloud...&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="Inserisci">
        <attribute name="title">
@@ -719,6 +764,19 @@ padding-left: 5px;</string>
          <string>Calendar</string>
         </property>
        </widget>
+       <widget class="QLabel" name="cloud_changes_3">
+        <property name="geometry">
+         <rect>
+          <x>610</x>
+          <y>0</y>
+          <width>181</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;☁️ Syncing changes with cloud...&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="tab_2">
        <attribute name="title">
@@ -827,6 +885,19 @@ padding-left: 5px;</string>
         </property>
         <property name="text">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:700; color:#5e5e5e;&quot;&gt;⚙️ Parsing calendars, please wait&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="cloud_changes_5">
+        <property name="geometry">
+         <rect>
+          <x>610</x>
+          <y>0</y>
+          <width>181</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#262626;&quot;&gt;☁️ Syncing changes with cloud...&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
       </widget>
@@ -1013,6 +1084,19 @@ padding-left: 5px;</string>
         <string>📅 Edit event</string>
        </property>
       </widget>
+      <widget class="QLabel" name="cloud_changes_6">
+       <property name="geometry">
+        <rect>
+         <x>610</x>
+         <y>0</y>
+         <width>181</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;☁️ Syncing changes with cloud...&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
       <zorder>successEdit</zorder>
       <zorder>errorEdit</zorder>
       <zorder>titleLabel</zorder>
@@ -1025,6 +1109,7 @@ padding-left: 5px;</string>
       <zorder>cancelEditButton</zorder>
       <zorder>closeEditButton</zorder>
       <zorder>todoLabel_9</zorder>
+      <zorder>cloud_changes_6</zorder>
      </widget>
     </widget>
     <widget class="QWidget" name="page_4">
@@ -1159,6 +1244,19 @@ padding-left: 5px;</string>
       </property>
       <property name="text">
        <string>🗑️ Delete event</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="cloud_changes_7">
+      <property name="geometry">
+       <rect>
+        <x>610</x>
+        <y>0</y>
+        <width>181</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;☁️ Syncing changes with cloud...&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
     </widget>
@@ -1299,6 +1397,19 @@ padding-left: 5px;</string>
        <string>Mark as completed</string>
       </property>
      </widget>
+     <widget class="QLabel" name="cloud_changes_8">
+      <property name="geometry">
+       <rect>
+        <x>610</x>
+        <y>0</y>
+        <width>181</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#2f2f2f;&quot;&gt;☁️ Syncing changes with cloud...&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="page_6">
      <widget class="QLabel" name="todoLabel_5">
@@ -1428,6 +1539,19 @@ padding-left: 5px;</string>
        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;Name field cannot be empty&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
+     <widget class="QLabel" name="cloud_changes_9">
+      <property name="geometry">
+       <rect>
+        <x>610</x>
+        <y>0</y>
+        <width>181</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#343434;&quot;&gt;☁️ Syncing changes with cloud...&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="page_7">
      <widget class="QLabel" name="label_15">
@@ -1522,6 +1646,19 @@ padding-left: 5px;</string>
       </property>
       <property name="text">
        <string>📅 Share calendar / tasklist</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="cloud_changes_10">
+      <property name="geometry">
+       <rect>
+        <x>610</x>
+        <y>0</y>
+        <width>191</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#303030;&quot;&gt;☁️ Syncing changes with cloud...&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
     </widget>
