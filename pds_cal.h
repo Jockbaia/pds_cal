@@ -109,8 +109,9 @@ private slots:
     void on_newCalendarShortcut_clicked();
 
 protected slots:
-    void clear_and_show_todos_again();
-    void clear_and_show_calendars_again();
+    void clear_selected_todo(std::string display_name);
+    void clear_selected_cal(std::string display_name);
+    void refresh_todos();
 
 private:
     Ui::pds_cal *ui;

@@ -26,7 +26,8 @@
    <string>myCalendar</string>
   </property>
   <property name="windowIcon">
-   <iconset theme="list-add"/>
+   <iconset theme="list-add">
+    <normaloff>.</normaloff>.</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QStackedWidget" name="stackedWidget">
@@ -541,6 +542,25 @@ padding-left: 5px;</string>
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ff0000;&quot;&gt;Error! Invalid title&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
+       <widget class="QLabel" name="parsing_alert_2">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>250</x>
+          <y>170</y>
+          <width>251</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(0, 120, 215);</string>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:700; color:#ffaa00;&quot;&gt;⚙️ Parsing tasks, please wait&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="Inserisci">
        <attribute name="title">
@@ -788,6 +808,25 @@ padding-left: 5px;</string>
         </property>
         <property name="text">
          <string>Share selected</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="parsing_alert_3">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>260</x>
+          <y>110</y>
+          <width>251</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(0, 120, 215);</string>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:8pt; font-weight:700; color:#5e5e5e;&quot;&gt;⚙️ Parsing calendars, please wait&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
       </widget>
