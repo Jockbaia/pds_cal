@@ -252,16 +252,36 @@ void MainWindow::parse_vcalendar(QString data) {
     }
 
     // some events have a set color
+
     std::string cal_color;
     if(!cal_man.is_new) cal_color = current_cal[5].substr(current_cal[5].find(":")).erase(0,1);
     else cal_color = "#b33b3b";
 
+    // check sulle impostazioni extra di nextcloud
+
+    int big_header_data = 0;
+
+    std::string a1 = "BEGIN:VTIMEZONE";
+    if (data.toStdString().find(a1) != std::string::npos) {
+        big_header_data++;
+    }
+
+    std::string a2 = "BEGIN:DAYLIGHT";
+    if (data.toStdString().find(a2) != std::string::npos) {
+         big_header_data++;
+    }
+
+    std::string a3 = "BEGIN:STANDARD";
+    if (data.toStdString().find(a3) != std::string::npos) {
+         big_header_data++;
+    }
+
     // inserimento eventi calendario locale
 
     if(!is_empty) {
-        if(calendar_data.size()>1 && calendar_data[1].substr(0,4) == "VEVE") {
+        if(calendar_data.size()>1 && calendar_data[1 + big_header_data].substr(0,4) == "VEVE") {
 
-            for(int i=1; i<calendar_data.size(); i++) {
+            for(int i=1 + big_header_data; i<calendar_data.size(); i++) {
 
                 Event my_event;
                 std::string s = calendar_data[i];
@@ -276,25 +296,84 @@ void MainWindow::parse_vcalendar(QString data) {
                     std::cout << token << std::endl;
                 }
 
-            QString ts_st = QString::fromStdString(current_event[3].substr(current_event[3].find(":")).erase(0,1));
-            QString ts_en = QString::fromStdString(current_event[4].substr(current_event[4].find(":")).erase(0,1));
-            QString ts_da = QString::fromStdString(current_event[5].substr(current_event[5].find(":")).erase(0,1));
+                // DT_START
+                //unsigned first = request_data[i].find("DTSTART");
+                //unsigned end_first = first + 15;
+                //unsigned last = request_data[i].find("</d:displayname>");
+                //std::string display_name = request_data[i].substr(end_first,last - end_first);
 
-            my_event.UID = QString::fromStdString(current_event[1].substr(current_event[1].find(":")).erase(0,1));
-            my_event.summary = QString::fromStdString(current_event[2].substr(current_event[2].find(":")).erase(0,1));
-            my_event.timestamp_start = QDateTime::fromString(ts_st,"yyyyMMddTHHmmss");
-            my_event.timestamp_end = QDateTime::fromString(ts_en,"yyyyMMddTHHmmss");
-            my_event.creation_date = QDateTime::fromString(ts_da,"yyyyMMddTHHmmssZ");
+                // DT_END
+                //first = request_data[i].find("DTEND");
+                //end_first = first + 12;
+                //last = request_data[i].find("</cs:getctag>");
+                //std::string ctag = request_data[i].substr(end_first,last - end_first);
+
+                // DT_CREATED
+                //first = request_data[i].find("<d:href>/remote.php/dav/calendars/");
+                //end_first = first + 34;
+                //last = request_data[i].find("/</d:href>");
+                //std::string user_plus_cal = request_data[i].substr(end_first,last - end_first);
+
+                //first = user_plus_cal.find("/");
+                //end_first = first + 1;
+                //last = user_plus_cal.length();
+                //std::string calendar_name = user_plus_cal.substr(end_first,last - end_first);
+
+                int end_first;
+                int first;
+                int last;
+
+                QString myUID;
+                QString myDTSTART;
+                QString myDTEND;
+                QString mySUMMARY;
+                QString myCREATED;
+
+
+                for (auto str : current_event){
+                    if (str.substr(0,3) == "UID") {
+                        first = str.find(":");
+                        end_first = first + 1;
+                        last = str.length();
+                        myUID = QString::fromStdString(str.substr(end_first,last - end_first));
+                    } else if (str.substr(0,7) == "DTSTART") {
+                        first = str.find(":");
+                        end_first = first + 1;
+                        last = str.length();
+                        myDTSTART = QString::fromStdString(str.substr(end_first,last - end_first));
+                    } else if (str.substr(0,5) == "DTEND") {
+                        first = str.find(":");
+                        end_first = first + 1;
+                        last = str.length();
+                        myDTEND = QString::fromStdString(str.substr(end_first,last - end_first));
+                    } else if (str.substr(0,7) == "SUMMARY") {
+                        first = str.find(":");
+                        end_first = first + 1;
+                        last = str.length();
+                        mySUMMARY = QString::fromStdString(str.substr(end_first,last - end_first));
+                    } else if (str.substr(0,7) == "CREATED") {
+                        first = str.find(":");
+                        end_first = first + 1;
+                        last = str.length();
+                        myCREATED = QString::fromStdString(str.substr(end_first,last - end_first));
+                    }
+                }
+
+            my_event.UID = myUID;
+            my_event.summary = mySUMMARY;
+            my_event.timestamp_start = QDateTime::fromString(myDTSTART,"yyyyMMddTHHmmss");
+            my_event.timestamp_end = QDateTime::fromString(myDTEND,"yyyyMMddTHHmmss");
+            my_event.creation_date = QDateTime::fromString(myCREATED,"yyyyMMddTHHmmssZ");
 
             cal_man.calendars[cal_name].events[my_event.UID.toStdString()] = my_event;
 
             }
         }
-        else if(calendar_data.size()>1 && calendar_data[1].substr(0,4) == "VTOD") {
+        else if(calendar_data.size()>1 && calendar_data[1 + big_header_data].substr(0,4) == "VTOD") {
 
             cal_man.calendars[cal_name].is_todo = true;
 
-        for(int i=1; i<calendar_data.size(); i++) {
+        for(int i=1 + big_header_data; i<calendar_data.size(); i++) {
 
             Todo my_todo;
             std::string s = calendar_data[i];
@@ -775,12 +854,14 @@ void MainWindow::editEvent(QString user, QString uid, QString calendar_name, QSt
     qDebug() << "[Edit Event] " << reply;
 
     // Modify event locally
+
     Event *e = &cal_man.calendars[calendar_name.toStdString()].events[uid.toStdString()];
 
     e->UID = uid;
     e->summary = summary;
     e->timestamp_start = start_date_time;
     e->timestamp_end = end_date_time;
+
 }
 
 void MainWindow::on_displayedCalendar_clicked(const QDate &date)
