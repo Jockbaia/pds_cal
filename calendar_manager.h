@@ -20,6 +20,7 @@ public:
     Calendar selected_cal;
     QString selected_cal_name;
     bool is_new;
+    bool is_logged;
 
 
 signals:

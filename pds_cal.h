@@ -33,35 +33,6 @@ private slots:
     void parse_vcalendar(QString data);
     void parse_request(QString data);
 
-    // clicking buttons
-
-    void on_getButton_clicked();
-    void on_loginButton_clicked();
-    void on_createEventButton_clicked();
-    void on_createTodoButton_clicked();
-    void on_deleteTodoButton_clicked();
-    void on_editButton_clicked();
-    void on_closeEditButton_clicked();
-    void on_confirmEditButton_clicked();
-    void on_cancelEditButton_clicked();
-    void on_deleteButton_clicked();
-    void on_goBackButton_clicked();
-    void on_confirmDelete_clicked();
-    void on_new_calendar_btn_clicked();
-    void on_create_cal_goback_clicked();
-    void on_create_cal_go_clicked();
-    void on_cal_list_itemClicked(QTreeWidgetItem *item, int column);
-    void on_delete_calendar_btn_clicked();
-    void on_displayedCalendar_clicked(const QDate &date);
-    void on_listOfEvents_itemClicked(QListWidgetItem *item);
-    void on_TODO_list_itemClicked(QTreeWidgetItem *item, int column);
-    void on_editTodoButton_clicked();
-    void on_backTODOedit_clicked();
-    void on_backSAVEedit_clicked();
-    void on_share_calendar_btn_clicked();
-    void on_share_cal_goback_clicked();
-    void on_share_cal_go_clicked();
-
     // auth
 
     bool login(std::string usr, std::string pwd);
@@ -106,8 +77,36 @@ private slots:
     void startSynchronization();
     void handle_synch_reply(QNetworkReply*);
 
+    // clicking buttons
 
-
+    void on_getButton_clicked();
+    void on_loginButton_clicked();
+    void on_createEventButton_clicked();
+    void on_createTodoButton_clicked();
+    void on_deleteTodoButton_clicked();
+    void on_editButton_clicked();
+    void on_closeEditButton_clicked();
+    void on_confirmEditButton_clicked();
+    void on_cancelEditButton_clicked();
+    void on_deleteButton_clicked();
+    void on_goBackButton_clicked();
+    void on_confirmDelete_clicked();
+    void on_new_calendar_btn_clicked();
+    void on_create_cal_goback_clicked();
+    void on_create_cal_go_clicked();
+    void on_cal_list_itemClicked(QTreeWidgetItem *item, int column);
+    void on_delete_calendar_btn_clicked();
+    void on_displayedCalendar_clicked(const QDate &date);
+    void on_listOfEvents_itemClicked(QListWidgetItem *item);
+    void on_TODO_list_itemClicked(QTreeWidgetItem *item, int column);
+    void on_editTodoButton_clicked();
+    void on_backTODOedit_clicked();
+    void on_backSAVEedit_clicked();
+    void on_share_calendar_btn_clicked();
+    void on_share_cal_goback_clicked();
+    void on_share_cal_go_clicked();
+    void on_newEventShortcut_clicked();
+    void on_newCalendarShortcut_clicked();
 
 protected slots:
     void clear_and_show_todos_again();

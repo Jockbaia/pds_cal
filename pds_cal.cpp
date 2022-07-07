@@ -38,24 +38,22 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->success_create_event -> hide();
     ui->error_create_event -> hide();
-
     ui->selectedDate->setAlignment(Qt::Alignment(Qt::AlignHCenter));
     ui->selectedDate->setText("Select a day");
     ui->displayedCalendar->setSelectedDate(QDate::currentDate());
-
     ui->TODO_list->setSortingEnabled(true);
     ui->TODO_list->sortItems(1, Qt::SortOrder::AscendingOrder);
     ui->TODO_list->header()->resizeSection(0, 400);
     ui->error_TODO_create->hide();
     ui->error_TODO_edit->hide();
     ui->checkCompleted->setChecked(false);
-
     ui->successEdit->hide();
     ui->errorEdit->hide();
     ui->successDelete->hide();
     ui->errorDelete->hide();
     ui->loading_start->hide();
-
+    ui->parsing_alert->show();
+    ui->success_login->hide();
     ui->deleteTodoButton->setEnabled(false);
     ui->editTodoButton->setEnabled(false);
     ui->delete_calendar_btn->setEnabled(false);
@@ -69,14 +67,17 @@ MainWindow::MainWindow(QWidget *parent)
     ui->create_cal_error->hide();
     ui->share_cal_success->hide();
     ui->share_cal_error->hide();
+    ui->editButton->setEnabled(false);
+    ui->deleteButton->setEnabled(false);
+    ui->login_error->hide();
 
     connect(ui->displayedCalendar, SIGNAL(QCalendarWidget::activated(QDate)),
                      this, SLOT(MainWindow::on_displayedCalendar_clicked(QDate)));
 
     synch_timer = new QTimer(this);
-
     synch_timer->setInterval(SECONDS * 1000);
     synch_timer->setSingleShot(true);
+    cal_man.is_logged = false;
 
     connect(synch_timer, &QTimer::timeout,
             this, &MainWindow::startSynchronization);
@@ -92,15 +93,10 @@ void MainWindow::on_loginButton_clicked() {
 
     QString login_user = ui->username_login->text();
     QString password = ui->password_login->text();
+    ui->loading_start->show();
+    ui->login_error->hide();
 
-    if (login(login_user.toStdString(), password.toStdString())) {
-        ui->loading_start->show();      
-        cal_man.user = login_user;
-        cal_man.password = password;
-        get_calendars(login_user.toStdString(), password.toStdString());
-    } else {
-        // TODO inserire messaggio di errore se USER / PWD sbagliata
-    }
+    login(login_user.toStdString(), password.toStdString());
 }
 
 void MainWindow::showEventsOnDate(QDate date){
@@ -185,7 +181,6 @@ void MainWindow::on_createTodoButton_clicked()
         createTODO(user, cal_name, summary, dueDate);
         ui->error_TODO_create->hide();
     }
-
 
 }
 
@@ -304,29 +299,6 @@ void MainWindow::parse_vcalendar(QString data) {
                     current_event.push_back(token);
                     std::cout << token << std::endl;
                 }
-
-                // DT_START
-                //unsigned first = request_data[i].find("DTSTART");
-                //unsigned end_first = first + 15;
-                //unsigned last = request_data[i].find("</d:displayname>");
-                //std::string display_name = request_data[i].substr(end_first,last - end_first);
-
-                // DT_END
-                //first = request_data[i].find("DTEND");
-                //end_first = first + 12;
-                //last = request_data[i].find("</cs:getctag>");
-                //std::string ctag = request_data[i].substr(end_first,last - end_first);
-
-                // DT_CREATED
-                //first = request_data[i].find("<d:href>/remote.php/dav/calendars/");
-                //end_first = first + 34;
-                //last = request_data[i].find("/</d:href>");
-                //std::string user_plus_cal = request_data[i].substr(end_first,last - end_first);
-
-                //first = user_plus_cal.find("/");
-                //end_first = first + 1;
-                //last = user_plus_cal.length();
-                //std::string calendar_name = user_plus_cal.substr(end_first,last - end_first);
 
                 int end_first;
                 int first;
@@ -523,7 +495,9 @@ void MainWindow::parse_request(QString data) {
     }
 
     // end first loading: opening first window
+
     ui->stackedWidget->setCurrentIndex(1);
+
 
 }
 
@@ -597,22 +571,38 @@ bool MainWindow::get_calendars(std::string usr, std::string pwd) {
 
 void MainWindow::login_slot(QNetworkReply* reply) {
     if (reply->error() == QNetworkReply::NoError) {
+
         qDebug() << "[Logged]";
         QString strReply = (QString)reply->readAll();
+        cal_man.is_logged = true;
+        cal_man.user = ui->username_login->text();
+        cal_man.password = ui->password_login->text();
+        ui->login_error->hide();
+        ui->loading_start->hide();
+        ui->success_login->show();
+        get_calendars(cal_man.user.toStdString(), cal_man.password.toStdString());
+
     }
     else {
+
         qDebug() << "[Failure]" << reply -> errorString();
         delete reply;
+        cal_man.is_logged = false;
+        ui->login_error->show();
+        ui->loading_start->hide();
+        ui->success_login->hide();
+
     }
 }
 
 void MainWindow::getCalendars_slot(QNetworkReply* reply) {
     if (reply->error() == QNetworkReply::NoError) {
-        qDebug() << "[Logged]";
+        qDebug() << "[Getting calendars]";
         QString strReply = (QString)reply->readAll();
         parse_request(strReply);
         // first activation of the timer
         synch_timer->start();
+
     }
     else {
         qDebug() << "[Failure]" << reply -> errorString();
@@ -650,6 +640,7 @@ void MainWindow::report_getAllEvents(QNetworkReply* reply) {
         qDebug() << "[Getting all events]";
         qDebug() << strReply;
         parse_vcalendar(strReply);
+        ui->parsing_alert->hide();
     }
     else {
         qDebug() << "[Failure]" << reply->errorString();
@@ -882,6 +873,8 @@ void MainWindow::on_displayedCalendar_clicked(const QDate &date)
 void MainWindow::on_editButton_clicked()
 {
     ui->stackedWidget->setCurrentIndex(2);
+    ui->editButton->setEnabled(false);
+    ui->deleteButton->setEnabled(false);
 
 }
 
@@ -950,6 +943,8 @@ void MainWindow::on_cancelEditButton_clicked()
 void MainWindow::on_deleteButton_clicked()
 {
     ui->stackedWidget->setCurrentIndex(3);
+    ui->editButton->setEnabled(false);
+    ui->deleteButton->setEnabled(false);
 }
 
 void MainWindow::on_goBackButton_clicked()
@@ -1002,7 +997,6 @@ void MainWindow::on_confirmDelete_clicked()
 void MainWindow::on_listOfEvents_itemClicked(QListWidgetItem *item)
 {
     QString event_data = item->text();
-
     QString summary = event_data.section("\n", 0, 0);
     QString start = event_data.section("\n", 1, 1);
     QString end = event_data.section("\n", 2, 2);
@@ -1011,6 +1005,8 @@ void MainWindow::on_listOfEvents_itemClicked(QListWidgetItem *item)
     start.remove(pos, 7);
     end.remove(pos, 5);
 
+    ui->editButton->setEnabled(true);
+    ui->deleteButton->setEnabled(true);
     ui->titleEdit->setText(summary);
     ui->startDateTimeEdit->setDateTime(QDateTime::fromString(start, "dd.MM.yyyy hh:mm"));
     ui->endDateTimeEdit->setDateTime(QDateTime::fromString(end, "dd.MM.yyyy hh:mm"));
@@ -1525,5 +1521,18 @@ void MainWindow::shareCalendar_slot(QNetworkReply* reply) {
         qDebug() << "[Failure]" << reply -> errorString();
         delete reply;
     }
+}
+
+
+
+void MainWindow::on_newEventShortcut_clicked()
+{
+    ui->tabWidget->setCurrentIndex(2);
+}
+
+
+void MainWindow::on_newCalendarShortcut_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(5);
 }
 

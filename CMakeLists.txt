@@ -29,6 +29,7 @@ set(PROJECT_SOURCES
         todo.cpp
         calendar.h
         calendar.cpp
+        cal_home.gif
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
