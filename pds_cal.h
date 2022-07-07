@@ -56,6 +56,10 @@ private slots:
     void editEvent(QString user, QString uid, QString calendar_name, QString summary, QDateTime start_date_time, QDateTime end_date_time);
     void deleteEvent(QString user, QString pass, QString calendar_name, QString uid);
 
+    QList<Event> getEventsOnDate(QDate date);
+    void showEventsOnDate(QDate date);
+    QString eventsListToString(QList<Event>);
+
     // todos
 
     void createTODO(QString user, QString calendar_name, QString summary, QDateTime end_date);
@@ -67,10 +71,6 @@ private slots:
     void create_calendar(std::string usr, std::string pwd, std::string calendar_name);
     void delete_calendar(std::string usr, std::string pwd, std::string calendar_name);
     void share_calendar(std::string usr, std::string pwd, std::string calendar_name, std::string mail);
-
-    QList<Event> getEventsOnDate(QDate date);
-    void showEventsOnDate(QDate date);
-    QString eventsListToString(QList<Event>);
 
     // timer
 
