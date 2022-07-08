@@ -490,11 +490,11 @@ void MainWindow::login_slot(QNetworkReply* reply) {
     else {
 
         qDebug() << "[Failure]" << reply -> errorString();
-        delete reply;
         cal_man.is_logged = false;
         ui->login_error->show();
         ui->loading_start->hide();
         ui->success_login->hide();
+        // delete reply;
 
     }
 }
@@ -653,6 +653,7 @@ void MainWindow::report_createEvent(QNetworkReply* reply) {
         QString strReply = (QString)reply->readAll();
         qDebug() << "[Creating event]" << strReply;
         ui->progress_create_event->hide();
+        ui->error_create_event->hide();
         ui->success_create_event->show();
         cal_man.calendars[cal_man.selected_cal_name.toStdString()].events[cal_man.event_creation.UID.toStdString()] = cal_man.event_creation;
     }
@@ -661,7 +662,7 @@ void MainWindow::report_createEvent(QNetworkReply* reply) {
         ui->progress_create_event->hide();
         ui->success_create_event->hide();
         ui->error_create_event->show();
-        delete reply;
+        // delete reply;
     }
 }
 
@@ -722,6 +723,7 @@ void MainWindow::report_editEvent(QNetworkReply* reply) {
 
         ui->progressEdit->hide();
         ui->successEdit->show();
+        ui->errorEdit->hide();
 
     }
     else {
@@ -729,7 +731,7 @@ void MainWindow::report_editEvent(QNetworkReply* reply) {
         ui->progressEdit->hide();
         ui->successEdit->hide();
         ui->errorEdit->show();
-        delete reply;
+        // delete reply;
     }
 }
 
@@ -777,6 +779,7 @@ void MainWindow::report_deleteEvent(QNetworkReply* reply) {
 
         ui->progressDelete->hide();
         ui->successDelete->show();
+        ui->errorDelete->hide();
 
     }
     else {
@@ -784,7 +787,7 @@ void MainWindow::report_deleteEvent(QNetworkReply* reply) {
         ui->progressDelete->hide();
         ui->successDelete->hide();
         ui->errorDelete->show();
-        delete reply;
+        // delete reply;
     }
 }
 
@@ -891,11 +894,14 @@ void MainWindow::report_createTODO(QNetworkReply* reply) {
         ui->TODO_list->addTopLevelItem(newItem);
 
         ui->progress_TODO_create->hide();
+        ui->error_TODO_create->hide();
 
     }
     else {
         qDebug() << "[Failure]" << reply->errorString();
-        delete reply;
+        ui->progress_TODO_create->hide();
+        ui->error_TODO_create->show();
+        // delete reply;
     }
 }
 
@@ -940,6 +946,7 @@ void MainWindow::report_deleteTODO(QNetworkReply* reply) {
 
         // Deleting event locally
         ui->progress_TODO_create->hide();
+        ui->error_TODO_create->hide();
         cal_man.calendars[cal_man.selected_cal_name.toStdString()].todos.erase(cal_man.todo_creation.UID.toStdString());
         delete ui->TODO_list->currentItem();
 
@@ -947,7 +954,9 @@ void MainWindow::report_deleteTODO(QNetworkReply* reply) {
     }
     else {
         qDebug() << "[Failure]" << reply->errorString();
-        delete reply;
+        ui->progress_TODO_create->hide();
+        ui->error_TODO_create->show();
+        // delete reply;
     }
 }
 
@@ -1012,7 +1021,7 @@ void MainWindow::report_editTODO(QNetworkReply* reply) {
         ui->success_TODO_edit->hide();
         ui->progress_TODO_edit->hide();
         ui->error_TODO_edit->show();
-        delete reply;
+        // delete reply;
     }
 }
 
@@ -1076,12 +1085,20 @@ void MainWindow::createCalendar_slot(QNetworkReply* reply) {
     }
     else {
         qDebug() << "[Failure]" << reply -> errorString();
-        delete reply;
 
         ui->create_cal_progress->hide();
         ui->create_cal_error->show();
         ui->create_cal_success->hide();
+
+        // delete reply;
     }
+}
+
+bool MainWindow::isASCII (std::string s)
+{
+    return !std::any_of(s.begin(), s.end(), [](char c) {
+        return static_cast<unsigned char>(c) > 127;
+    });
 }
 
 void MainWindow::delete_calendar(std::string usr, std::string pwd, std::string calendar_name) {
@@ -1134,7 +1151,6 @@ void MainWindow::deleteCalendar_slot(QNetworkReply* reply) {
             refresh_todos();
             clear_selected_todo(cal_man.selected_cal.name);
         } else {
-
             ui->vevent_list->removeItem(ui->vevent_list->findText(QString::fromStdString(cal_man.selected_cal.name), Qt::MatchExactly));
         }
 
@@ -1145,7 +1161,7 @@ void MainWindow::deleteCalendar_slot(QNetworkReply* reply) {
         ui->delete_calendar_progress->hide();
         ui->delete_calendar_error->show();
         qDebug() << "[Failure]" << reply -> errorString();
-        delete reply;
+        // delete reply;
     }
 }
 
@@ -1161,6 +1177,7 @@ void MainWindow::share_calendar(std::string usr, std::string pwd, std::string ca
     QNetworkRequest request;
 
     std::string myUrl_string = "https://cloud.mackers.dev/remote.php/dav/calendars/" + usr + "/" + calendar_name;
+    // std::string myUrl_string = "https://cloud.mackers.dev/remote.php/dav/calendars/" ;
     QString my_qurl = QString::fromStdString(myUrl_string);
 
     request.setUrl(QUrl(my_qurl));
@@ -1192,12 +1209,19 @@ void MainWindow::share_calendar(std::string usr, std::string pwd, std::string ca
 
 void MainWindow::shareCalendar_slot(QNetworkReply* reply) {
     if (reply->error() == QNetworkReply::NoError) {
+        ui->share_cal_error->hide();
+        ui->share_cal_progress->hide();
+        ui->share_cal_success->show();
+
         qDebug() << "[Shared calendar]";
         QString strReply = (QString)reply->readAll();
     }
     else {
+        ui->share_cal_error->show();
+        ui->share_cal_progress->hide();
+        ui->share_cal_success->hide();
         qDebug() << "[Failure]" << reply -> errorString();
-        delete reply;
+        // delete reply;
     }
 }
 
@@ -1240,7 +1264,7 @@ void MainWindow::startSynchronization(){
 
     QNetworkReply *reply = manager->sendCustomRequest(request,"PROPFIND", req_propfind);
     QString response = reply->readAll();
-    qDebug() << "[Login] " << reply;
+    qDebug() << "[Syncing...] " << reply;
 }
 
 void MainWindow::handle_synch_reply(QNetworkReply *reply){
@@ -1267,7 +1291,7 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
         unsigned last = this_reply.find("</d:displayname>");
         std::string display_name = this_reply.substr(end_first,last - end_first);
 
-        std::cout << display_name << std::endl;
+        // std::cout << display_name << std::endl;
 
         // Getting ctag
         first = this_reply.find("<cs:getctag>");
@@ -1275,7 +1299,7 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
         last = this_reply.find("</cs:getctag>");
         std::string c_tag = this_reply.substr(end_first,last - end_first);
 
-        std::cout << c_tag << std::endl;
+        // std::cout << c_tag << std::endl;
 
         // Getting cal_name
         first = this_reply.find("<d:href>/remote.php/dav/calendars/");
@@ -1736,7 +1760,7 @@ void MainWindow::on_create_cal_goback_clicked()
 void MainWindow::on_create_cal_go_clicked()
 {
     QString myTitle = ui->create_cal_name->toPlainText();
-    if(myTitle.isEmpty() || myTitle.contains(" ")) {
+    if(myTitle.isEmpty() || myTitle.contains(" ") || !isASCII(myTitle.toStdString())) {
         ui->create_cal_error->show();
         ui->create_cal_success->hide();
         ui->create_cal_progress->hide();
@@ -1821,3 +1845,9 @@ void MainWindow::on_newCalendarShortcut_clicked()
 {
     ui->stackedWidget->setCurrentIndex(5);
 }
+
+void MainWindow::on_create_cal_name_copyAvailable(bool b)
+{
+
+}
+

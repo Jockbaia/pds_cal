@@ -70,6 +70,7 @@ private slots:
 
     void create_calendar(std::string usr, std::string pwd, std::string calendar_name);
     void createCalendar_slot(QNetworkReply* reply);
+    bool isASCII (std::string s);
     void delete_calendar(std::string usr, std::string pwd, std::string calendar_name);
     void deleteCalendar_slot(QNetworkReply* reply);
     void share_calendar(std::string usr, std::string pwd, std::string calendar_name, std::string mail);
@@ -110,6 +111,8 @@ private slots:
     void on_share_cal_go_clicked();
     void on_newEventShortcut_clicked();
     void on_newCalendarShortcut_clicked();
+
+    void on_create_cal_name_copyAvailable(bool b);
 
 protected slots:
     void clear_selected_todo(std::string display_name);
