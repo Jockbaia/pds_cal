@@ -22,18 +22,20 @@ public:
     std::map<std::string, Calendar> calendars;
     Todo selected_todo;
     Calendar selected_cal;
-
+    QString selected_cal_name;
     Event event_creation;
     Todo todo_creation;
 
-    // GUI selection
+    // Sync (new calendar from server)
 
-    QString selected_cal_name;
+    std::string sync_name;
+    bool is_new_sync;
 
     // various flags
 
     bool is_new;
     bool is_logged;
+
 
 
 signals:

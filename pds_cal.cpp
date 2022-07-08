@@ -104,6 +104,7 @@ MainWindow::MainWindow(QWidget *parent)
     synch_timer->setInterval(SECONDS * 1000);
     synch_timer->setSingleShot(true);
     cal_man.is_logged = false;
+    cal_man.is_new_sync = false;
     
     connect(synch_timer, &QTimer::timeout,
             this, &MainWindow::startSynchronization);
@@ -167,6 +168,11 @@ void MainWindow::parse_vcalendar(QString data) {
         if(cal.second.display_name == cal_name) {
             cal_name = cal.second.name;
         }
+    }
+
+    if(cal_man.is_new_sync) {
+        cal_name = cal_man.sync_name;
+        cal_man.is_new_sync = false;
     }
 
     // Some events have a set color
@@ -1271,6 +1277,7 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
 
     QString replyData = reply -> readAll();
     QString partial_reply;
+    int new_cal_num = 0;
     qsizetype first_cal = replyData.indexOf("<d:response>");
     replyData.remove(0, first_cal + 12);    // remove header
 
@@ -1283,6 +1290,7 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
     for(int i=1; i< responses.size() - 2; i++) {
 
         partial_reply = responses[i];
+        new_cal_num++;
 
         // Getting displayname
         std::string this_reply = partial_reply.toStdString();
@@ -1313,7 +1321,7 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
         last = cal_slice.length();
         std::string cal_name = cal_slice.substr(end_first,last - end_first);
 
-        std::cout << cal_name << std::endl;
+        // std::cout << cal_name << std::endl;
 
         QString old_ctag;
 
@@ -1322,6 +1330,8 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
             // new calendar
 
             if (cal_man.calendars.find(cal_name) == cal_man.calendars.end()){
+                cal_man.is_new_sync = true;
+                cal_man.sync_name = cal_name;
                 getAllEvents(cal_man.user, cal_man.password, QString::fromStdString(cal_name));
             } else {
                 old_ctag = QString::fromStdString(cal_man.calendars[cal_name].ctag);
