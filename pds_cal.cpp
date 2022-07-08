@@ -122,6 +122,7 @@ MainWindow::~MainWindow()
 void MainWindow::parse_vcalendar(QString data) {
 
     bool is_empty = false;
+    cal_man.is_new = false;
     std::string s = data.toStdString();
     std::string cal_data;
     std::string delimiter = "\r\nBEGIN:";
@@ -764,7 +765,6 @@ void MainWindow::deleteEvent(QString user, QString pass, QString calendar_name, 
     qDebug() << "Deleting" << request.url();
     QNetworkReply *reply = manager->deleteResource(request);
     qDebug() << "[Deleting Event] " << reply;
-
 }
 
 void MainWindow::report_deleteEvent(QNetworkReply* reply) {
@@ -944,12 +944,11 @@ void MainWindow::report_deleteTODO(QNetworkReply* reply) {
         QString strReply = (QString)reply->readAll();
         qDebug() << "[Deleting Todo]" << strReply;
 
-        // Deleting event locally
+        // Deleting TODO locally
         ui->progress_TODO_create->hide();
         ui->error_TODO_create->hide();
         cal_man.calendars[cal_man.selected_cal_name.toStdString()].todos.erase(cal_man.todo_creation.UID.toStdString());
         delete ui->TODO_list->currentItem();
-
 
     }
     else {
@@ -1150,6 +1149,7 @@ void MainWindow::deleteCalendar_slot(QNetworkReply* reply) {
             ui->vtodo_list->removeItem(ui->vtodo_list->findText(QString::fromStdString(cal_man.selected_cal.name), Qt::MatchExactly));
             refresh_todos();
             clear_selected_todo(cal_man.selected_cal.name);
+            ui->progress_TODO_create->hide();
         } else {
             ui->vevent_list->removeItem(ui->vevent_list->findText(QString::fromStdString(cal_man.selected_cal.name), Qt::MatchExactly));
         }
@@ -1359,6 +1359,7 @@ void MainWindow::handle_synch_reply(QNetworkReply *reply){
 
     ui->cloud_changes->hide();
     synch_timer->start();
+
 }
 
 void MainWindow::clear_selected_todo(std::string display_name){
@@ -1370,6 +1371,8 @@ void MainWindow::clear_selected_todo(std::string display_name){
         qDebug() << item->text(2);
         delete item;
     }
+
+    ui->progress_TODO_create->hide();
 
 }
 
@@ -1463,9 +1466,11 @@ void MainWindow::on_createEventButton_clicked() {
     if (summary.isEmpty() || startDateTime > endDateTime || cal_name.isEmpty()) {
         ui -> progress_create_event -> hide();
         ui -> error_create_event -> show();
+        ui -> success_create_event -> hide();
     } else {
         ui -> progress_create_event -> show();
         ui -> error_create_event -> hide();
+        ui -> success_create_event -> hide();
         createEvent(user, cal_name, summary, startDateTime, endDateTime);
     }
     
@@ -1678,7 +1683,6 @@ void MainWindow::on_deleteTodoButton_clicked()
     ui->editTodoButton->setEnabled(false);
     ui->deleteTodoButton->setEnabled(false);
     deleteEvent(ui->username_login->text(), ui->username_login->text(), cal_man.selected_cal_name, cal_man.selected_todo.UID);
-    ui->progress_TODO_create->hide();
     // cal_man.calendars[cal_man.selected_cal_name.toStdString()].todos.erase(cal_man.selected_todo.UID.toStdString());
 }
 
@@ -1844,10 +1848,5 @@ void MainWindow::on_newEventShortcut_clicked()
 void MainWindow::on_newCalendarShortcut_clicked()
 {
     ui->stackedWidget->setCurrentIndex(5);
-}
-
-void MainWindow::on_create_cal_name_copyAvailable(bool b)
-{
-
 }
 

@@ -112,8 +112,6 @@ private slots:
     void on_newEventShortcut_clicked();
     void on_newCalendarShortcut_clicked();
 
-    void on_create_cal_name_copyAvailable(bool b);
-
 protected slots:
     void clear_selected_todo(std::string display_name);
     void clear_selected_cal(std::string display_name);
