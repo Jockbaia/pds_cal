@@ -28,7 +28,7 @@
 #include <chrono>
 #include <thread>
 
-#define SECONDS 10
+#define SECONDS 3
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -39,21 +39,37 @@ MainWindow::MainWindow(QWidget *parent)
     // First GUI setup
 
     ui->setupUi(this);
-    ui->success_create_event -> hide();
-    ui->error_create_event -> hide();
+    ui->progress_create_event->hide();
+    ui->success_create_event->hide();
+    ui->error_create_event->hide();
+    ui->progressEdit->hide();
+    ui->successEdit->hide();
+    ui->errorEdit->hide();
+    ui->successDelete->hide();
+    ui->errorDelete->hide();
+    ui->progressDelete->hide();
+    ui->error_TODO_create->hide();
+    ui->progress_TODO_create->hide();
+    ui->error_TODO_edit->hide();
+    ui->progress_TODO_edit->hide();
+    ui->success_TODO_edit->hide();
+    ui->create_cal_success->hide();
+    ui->create_cal_error->hide();
+    ui->create_cal_progress->hide();
+    ui->delete_calendar_progress->hide();
+    ui->delete_calendar_error->hide();
+    ui->share_cal_success->hide();
+    ui->share_cal_error->hide();
+    ui->share_cal_progress->hide();
+
     ui->selectedDate->setAlignment(Qt::Alignment(Qt::AlignHCenter));
     ui->selectedDate->setText("Select a day");
     ui->displayedCalendar->setSelectedDate(QDate::currentDate());
     ui->TODO_list->setSortingEnabled(true);
     ui->TODO_list->sortItems(1, Qt::SortOrder::AscendingOrder);
     ui->TODO_list->header()->resizeSection(0, 400);
-    ui->error_TODO_create->hide();
-    ui->error_TODO_edit->hide();
+
     ui->checkCompleted->setChecked(false);
-    ui->successEdit->hide();
-    ui->errorEdit->hide();
-    ui->successDelete->hide();
-    ui->errorDelete->hide();
     ui->loading_start->hide();
     ui->parsing_alert->show();
     ui->success_login->hide();
@@ -66,13 +82,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->end_date_time->setDateTime(QDateTime::currentDateTime());
     ui->stackedWidget->setCurrentIndex(0);
     ui->tabWidget->setCurrentIndex(0);
-    ui->create_cal_success->hide();
-    ui->create_cal_error->hide();
-    ui->share_cal_success->hide();
-    ui->share_cal_error->hide();
     ui->editButton->setEnabled(false);
     ui->deleteButton->setEnabled(false);
     ui->login_error->hide();
+
     ui->cloud_changes->hide();
     ui->cloud_changes_2->hide();
     ui->cloud_changes_3->hide();
@@ -101,7 +114,6 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
-
 
 /*
  * ******* PARSING *********
@@ -184,7 +196,7 @@ void MainWindow::parse_vcalendar(QString data) {
     // Inserting events on local calendar
 
     if(!is_empty) {
-        cal_man.is_new = false;
+        // cal_man.is_new = false;
         if(calendar_data.size()>1 && calendar_data[1 + big_header_data].substr(0,4) == "VEVE") {
 
             for(int i=1 + big_header_data; i<calendar_data.size(); i++) {
@@ -455,6 +467,38 @@ bool MainWindow::login(std::string usr, std::string pwd) {
 
 }
 
+
+void MainWindow::do_authentication(QNetworkReply *, QAuthenticator *q) {
+    q->setUser(ui->username_login->text());
+    q->setPassword(ui->password_login->text());
+}
+
+void MainWindow::login_slot(QNetworkReply* reply) {
+    if (reply->error() == QNetworkReply::NoError) {
+
+        qDebug() << "[Auth]";
+        QString strReply = (QString)reply->readAll();
+        cal_man.is_logged = true;
+        cal_man.user = ui->username_login->text();
+        cal_man.password = ui->password_login->text();
+        ui->login_error->hide();
+        ui->loading_start->hide();
+        ui->success_login->show();
+        get_calendars(cal_man.user.toStdString(), cal_man.password.toStdString());
+
+    }
+    else {
+
+        qDebug() << "[Failure]" << reply -> errorString();
+        delete reply;
+        cal_man.is_logged = false;
+        ui->login_error->show();
+        ui->loading_start->hide();
+        ui->success_login->hide();
+
+    }
+}
+
 bool MainWindow::get_calendars(std::string usr, std::string pwd) {
     QString _usr = QString::fromStdString(usr);
     QString _pwd = QString::fromStdString(pwd);
@@ -490,41 +534,6 @@ bool MainWindow::get_calendars(std::string usr, std::string pwd) {
 
 }
 
-/*
- * ******* QREPLYS *********
-*/
-
-void MainWindow::do_authentication(QNetworkReply *, QAuthenticator *q) {
-    q->setUser(ui->username_login->text());
-    q->setPassword(ui->password_login->text());
-}
-
-void MainWindow::login_slot(QNetworkReply* reply) {
-    if (reply->error() == QNetworkReply::NoError) {
-
-        qDebug() << "[Logged]";
-        QString strReply = (QString)reply->readAll();
-        cal_man.is_logged = true;
-        cal_man.user = ui->username_login->text();
-        cal_man.password = ui->password_login->text();
-        ui->login_error->hide();
-        ui->loading_start->hide();
-        ui->success_login->show();
-        get_calendars(cal_man.user.toStdString(), cal_man.password.toStdString());
-
-    }
-    else {
-
-        qDebug() << "[Failure]" << reply -> errorString();
-        delete reply;
-        cal_man.is_logged = false;
-        ui->login_error->show();
-        ui->loading_start->hide();
-        ui->success_login->hide();
-
-    }
-}
-
 void MainWindow::getCalendars_slot(QNetworkReply* reply) {
     if (reply->error() == QNetworkReply::NoError) {
         qDebug() << "[Getting calendars]";
@@ -546,74 +555,11 @@ void MainWindow::report_function(QNetworkReply* reply) {
 
     if (reply->error() == QNetworkReply::NoError) {
         QString strReply = (QString)reply->readAll();
-        qDebug() << "[OK]";
+        qDebug() << "[OK - Creating event]";
         qDebug() << strReply;
     }
     else {
         qDebug() << "[Failure]" << reply->errorString();
-        delete reply;
-    }
-}
-
-void MainWindow::report_getAllEvents(QNetworkReply* reply) {
-
-    if (reply->error() == QNetworkReply::NoError) {
-        QString strReply = (QString)reply->readAll();
-        qDebug() << "[Getting all events]";
-        qDebug() << strReply;
-        parse_vcalendar(strReply);
-        ui->parsing_alert->hide();
-        ui->parsing_alert_2->hide();
-        ui->parsing_alert_3->hide();
-    }
-    else {
-        qDebug() << "[Failure]" << reply->errorString();
-        delete reply;
-    }
-}
-
-void MainWindow::createCalendar_slot(QNetworkReply* reply) {
-    if (reply->error() == QNetworkReply::NoError) {
-        qDebug() << "[Created]";
-        QString strReply = (QString)reply->readAll();
-        getAllEvents(ui->username_login->text(), ui->password_login->text(), ui->create_cal_name->toPlainText());
-    }
-    else {
-        qDebug() << "[Failure]" << reply -> errorString();
-        delete reply;
-    }
-}
-
-void MainWindow::deleteCalendar_slot(QNetworkReply* reply) {
-    if (reply->error() == QNetworkReply::NoError) {
-        qDebug() << "[Deleted]";
-        QString strReply = (QString)reply->readAll();
-        delete ui->cal_list->currentItem();
-
-        if (cal_man.selected_cal.is_todo) {
-            ui->vtodo_list->removeItem(ui->vtodo_list->findText(QString::fromStdString(cal_man.selected_cal.name), Qt::MatchExactly));
-            refresh_todos();
-        } else {
-            ui->vevent_list->removeItem(ui->vevent_list->findText(QString::fromStdString(cal_man.selected_cal.name), Qt::MatchExactly));
-        }
-
-        ui->delete_calendar_btn->setEnabled(false);
-
-        cal_man.calendars.erase(cal_man.selected_cal.name);
-    }
-    else {
-        qDebug() << "[Failure]" << reply -> errorString();
-        delete reply;
-    }
-}
-
-void MainWindow::shareCalendar_slot(QNetworkReply* reply) {
-    if (reply->error() == QNetworkReply::NoError) {
-        qDebug() << "[Shared]";
-        QString strReply = (QString)reply->readAll();
-    }
-    else {
-        qDebug() << "[Failure]" << reply -> errorString();
         delete reply;
     }
 }
@@ -645,7 +591,17 @@ void MainWindow::createEvent(QString user, QString calendar_name, QString summar
     QNetworkAccessManager *manager = new QNetworkAccessManager();
     QString uid = QDateTime::currentDateTime().toString("yyyyMMdd-HHMM-00ss") + "-0000-" + start_date_time.toString("yyyyMMddHHMM");
 
-    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
+    // Preparing local event
+
+    cal_man.selected_cal_name = calendar_name;
+    cal_man.event_creation.UID = uid;
+    cal_man.event_creation.summary = summary;
+    cal_man.event_creation.timestamp_start = start_date_time;
+    cal_man.event_creation.timestamp_end = end_date_time;
+
+    // Sending request
+
+    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_createEvent(QNetworkReply*)));
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
 
     QNetworkRequest request;
@@ -672,22 +628,57 @@ void MainWindow::createEvent(QString user, QString calendar_name, QString summar
     QString response = reply->readAll();
     qDebug() << "[Add Event] " << reply;
 
-    // Adding event locally
+}
 
-    Event my_event;
-    my_event.UID = uid;
-    my_event.summary = summary;
-    my_event.timestamp_start = start_date_time;
-    my_event.timestamp_end = end_date_time;
+void MainWindow::report_getAllEvents(QNetworkReply* reply) {
 
-    cal_man.calendars[calendar_name.toStdString()].events[uid.toStdString()] = my_event;
+    if (reply->error() == QNetworkReply::NoError) {
+        QString strReply = (QString)reply->readAll();
+        qDebug() << "[Getting all events]";
+        qDebug() << strReply;
+        parse_vcalendar(strReply);
+        ui->parsing_alert->hide();
+        ui->parsing_alert_2->hide();
+        ui->parsing_alert_3->hide();
+    }
+    else {
+        qDebug() << "[Failure]" << reply->errorString();
+        delete reply;
+    }
+}
 
+void MainWindow::report_createEvent(QNetworkReply* reply) {
+
+    if (reply->error() == QNetworkReply::NoError) {
+        QString strReply = (QString)reply->readAll();
+        qDebug() << "[Creating event]" << strReply;
+        ui->progress_create_event->hide();
+        ui->success_create_event->show();
+        cal_man.calendars[cal_man.selected_cal_name.toStdString()].events[cal_man.event_creation.UID.toStdString()] = cal_man.event_creation;
+    }
+    else {
+        qDebug() << "[Failure]" << reply->errorString();
+        ui->progress_create_event->hide();
+        ui->success_create_event->hide();
+        ui->error_create_event->show();
+        delete reply;
+    }
 }
 
 void MainWindow::editEvent(QString user, QString uid, QString calendar_name, QString summary, QDateTime start_date_time, QDateTime end_date_time) {
     QNetworkAccessManager *manager = new QNetworkAccessManager();
 
-    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
+    ui->progressEdit->show();
+
+    // Setting up edit info
+
+    cal_man.selected_cal_name = calendar_name;
+    cal_man.event_creation.UID = uid;
+    cal_man.event_creation.summary = summary;
+    cal_man.event_creation.timestamp_start = start_date_time;
+    cal_man.event_creation.timestamp_end = end_date_time;
+
+    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_editEvent(QNetworkReply*)));
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
 
     QNetworkRequest request;
@@ -708,26 +699,49 @@ void MainWindow::editEvent(QString user, QString uid, QString calendar_name, QSt
                                                                                                                                                                                      "END:VCALENDAR\n";
 
     QByteArray converted_report = request_report.toUtf8();
-
     QNetworkReply *reply = manager->put(request, converted_report);
     QString response = reply->readAll();
     qDebug() << "[Edit Event] " << reply;
 
-    // Modify event locally
+}
 
-    Event *e = &cal_man.calendars[calendar_name.toStdString()].events[uid.toStdString()];
+void MainWindow::report_editEvent(QNetworkReply* reply) {
 
-    e->UID = uid;
-    e->summary = summary;
-    e->timestamp_start = start_date_time;
-    e->timestamp_end = end_date_time;
+    if (reply->error() == QNetworkReply::NoError) {
+        QString strReply = (QString)reply->readAll();
+        qDebug() << "[Editing event]" << strReply;
 
+        // Modify event locally
+
+        Event *e = &cal_man.calendars[cal_man.selected_cal_name.toStdString()].events[cal_man.event_creation.UID.toStdString()];
+
+        e->UID = cal_man.event_creation.UID;
+        e->summary = cal_man.event_creation.summary;
+        e->timestamp_start = cal_man.event_creation.timestamp_start;
+        e->timestamp_end = cal_man.event_creation.timestamp_end;
+
+        ui->progressEdit->hide();
+        ui->successEdit->show();
+
+    }
+    else {
+        qDebug() << "[Failure]" << reply->errorString();
+        ui->progressEdit->hide();
+        ui->successEdit->hide();
+        ui->errorEdit->show();
+        delete reply;
+    }
 }
 
 void MainWindow::deleteEvent(QString user, QString pass, QString calendar_name, QString uid) {
 
+    // Setting up local changes
+
+    cal_man.selected_cal_name = calendar_name;
+    cal_man.event_creation.UID = uid;
+
     QNetworkAccessManager *manager = new QNetworkAccessManager();
-    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
+    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_deleteEvent(QNetworkReply*)));
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
 
     QString concatenated = user + ":" + pass;
@@ -749,10 +763,29 @@ void MainWindow::deleteEvent(QString user, QString pass, QString calendar_name, 
     QNetworkReply *reply = manager->deleteResource(request);
     qDebug() << "[Deleting Event] " << reply;
 
-    // Deleting event locally
+}
 
-    cal_man.calendars[calendar_name.toStdString()].events.erase(uid.toStdString());
+void MainWindow::report_deleteEvent(QNetworkReply* reply) {
 
+    if (reply->error() == QNetworkReply::NoError) {
+        QString strReply = (QString)reply->readAll();
+        qDebug() << "[Deleting event]" << strReply;
+
+        // Deleting event locally
+
+        cal_man.calendars[cal_man.selected_cal_name.toStdString()].events.erase(cal_man.event_creation.UID.toStdString());
+
+        ui->progressDelete->hide();
+        ui->successDelete->show();
+
+    }
+    else {
+        qDebug() << "[Failure]" << reply->errorString();
+        ui->progressDelete->hide();
+        ui->successDelete->hide();
+        ui->errorDelete->show();
+        delete reply;
+    }
 }
 
 QList<Event> MainWindow::getEventsOnDate(QDate date){
@@ -796,10 +829,20 @@ QString MainWindow::eventsListToString(QList<Event> eventsList){
 void MainWindow::createTODO(QString user, QString calendar_name, QString summary, QDateTime end_date) {
 
     QNetworkAccessManager *manager = new QNetworkAccessManager();
+
     QDateTime current_datetime = QDateTime::currentDateTime();
     QString uid = current_datetime.toString("yyyyMMdd-HHMM-00ss"); + "-0000-" + end_date.toString("yyyyMMddHHMM");
 
-    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
+    // Setting up local TODO
+
+    cal_man.todo_creation.UID = uid;
+    cal_man.todo_creation.summary = summary;
+    cal_man.todo_creation.due_to = end_date;
+    cal_man.todo_creation.creation_date = current_datetime;
+    cal_man.todo_creation.completed = false; // Makes no sense to create a todo when it's already done
+    cal_man.selected_cal_name = calendar_name;
+
+    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_createTODO(QNetworkReply*)));
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
 
     QNetworkRequest request;
@@ -824,35 +867,47 @@ void MainWindow::createTODO(QString user, QString calendar_name, QString summary
 
     QNetworkReply *reply = manager->put(request, converted_report);
     QString response = reply->readAll();
-    qDebug() << "[Add Event] " << reply;
+    qDebug() << "[Add Todo] " << reply;
 
-    // Adding todo locally
+}
 
-    Todo my_todo;
-    my_todo.UID = uid;
-    my_todo.summary = summary;
-    my_todo.due_to = end_date;
-    my_todo.creation_date = current_datetime;
-    my_todo.completed = false; // Makes no sense to create a todo when it's already done
-    cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()] = my_todo;
-    QString display_name = QString::fromStdString(cal_man.calendars[calendar_name.toStdString()].display_name);
+void MainWindow::report_createTODO(QNetworkReply* reply) {
 
-    // Putting task on TODO
+    if (reply->error() == QNetworkReply::NoError) {
+        QString strReply = (QString)reply->readAll();
+        qDebug() << "[Creating Todo]" << strReply;
 
-    QTreeWidgetItem *newItem = new QTreeWidgetItem();
-    newItem->setText(0, my_todo.summary);
-    newItem->setText(1, my_todo.due_to.toString("yyyy-MM-dd"));
-    newItem->setText(2, display_name);
-    newItem->setText(4, my_todo.UID);
-    newItem->setText(3, "Due");
-    ui->TODO_list->addTopLevelItem(newItem);
+        cal_man.calendars[cal_man.selected_cal_name.toStdString()].todos[cal_man.todo_creation.UID.toStdString()] = cal_man.todo_creation;
+        QString display_name = QString::fromStdString(cal_man.calendars[cal_man.selected_cal_name.toStdString()].display_name);
 
+        // Putting task on TODO
+
+        QTreeWidgetItem *newItem = new QTreeWidgetItem();
+        newItem->setText(0, cal_man.todo_creation.summary);
+        newItem->setText(1, cal_man.todo_creation.due_to.toString("yyyy-MM-dd"));
+        newItem->setText(2, display_name);
+        newItem->setText(4, cal_man.todo_creation.UID);
+        newItem->setText(3, "Due");
+        ui->TODO_list->addTopLevelItem(newItem);
+
+        ui->progress_TODO_create->hide();
+
+    }
+    else {
+        qDebug() << "[Failure]" << reply->errorString();
+        delete reply;
+    }
 }
 
 void MainWindow::deleteTODO(QString user, QString pass, QString calendar_name, QString uid) {
 
+    // Setting up local TODO
+
+    cal_man.todo_creation.UID = uid;
+    cal_man.selected_cal_name = calendar_name;
+
     QNetworkAccessManager *manager = new QNetworkAccessManager();
-    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
+    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_deleteTODO(QNetworkReply*)));
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
 
     QString concatenated = user + ":" + pass;
@@ -870,22 +925,44 @@ void MainWindow::deleteTODO(QString user, QString pass, QString calendar_name, Q
     request.setRawHeader("Content-Type", "text/calendar; charset=utf-8");
     request.setRawHeader("Content-Length", 0);
 
-    qDebug() << "Deleting" << request.url();
+    // qDebug() << "Deleting" << request.url();
     QNetworkReply *reply = manager->deleteResource(request);
     QString response = reply->readAll();
-    qDebug() << "[Deleting Event] " << reply;
+    qDebug() << "[Delete Todo] " << reply;
 
-    // Deleting event locally
+}
 
-    cal_man.calendars[calendar_name.toStdString()].todos.erase(uid.toStdString());
+void MainWindow::report_deleteTODO(QNetworkReply* reply) {
 
+    if (reply->error() == QNetworkReply::NoError) {
+        QString strReply = (QString)reply->readAll();
+        qDebug() << "[Deleting Todo]" << strReply;
+
+        // Deleting event locally
+        ui->progress_TODO_create->hide();
+        cal_man.calendars[cal_man.selected_cal_name.toStdString()].todos.erase(cal_man.todo_creation.UID.toStdString());
+        delete ui->TODO_list->currentItem();
+
+
+    }
+    else {
+        qDebug() << "[Failure]" << reply->errorString();
+        delete reply;
+    }
 }
 
 void MainWindow::editTODO(QString user, QString calendar_name, QString summary, QDateTime new_due, QString uid, bool completed) {
 
+    // Setting up local TODO
+
+    cal_man.todo_creation.UID = uid;
+    cal_man.selected_cal_name = calendar_name;
+    cal_man.todo_creation.due_to = new_due;
+    if(completed) cal_man.todo_creation.completed = true;
+
     QNetworkAccessManager *manager = new QNetworkAccessManager();
 
-    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_function(QNetworkReply*)));
+    connect(manager, SIGNAL(finished(QNetworkReply*)),this, SLOT(report_editTODO(QNetworkReply*)));
     connect(manager, SIGNAL(authenticationRequired(QNetworkReply *, QAuthenticator *)), this, SLOT(do_authentication(QNetworkReply *, QAuthenticator *)));
 
     QNetworkRequest request;
@@ -911,15 +988,34 @@ void MainWindow::editTODO(QString user, QString calendar_name, QString summary, 
 
     QNetworkReply *reply = manager->put(request, converted_report);
     QString response = reply->readAll();
-    qDebug() << "[Add Event] " << reply;
-
-    // Editing event locally
-
-    cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].due_to = new_due;
-    cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].summary = summary;
-    if(completed) cal_man.calendars[calendar_name.toStdString()].todos[uid.toStdString()].completed = true;
-
+    qDebug() << "[Edit Todo] " << reply;
 }
+
+void MainWindow::report_editTODO(QNetworkReply* reply) {
+
+    if (reply->error() == QNetworkReply::NoError) {
+        QString strReply = (QString)reply->readAll();
+        qDebug() << "[Editing Todo]" << strReply;
+
+        // Editing event locally
+
+        cal_man.calendars[cal_man.selected_cal_name.toStdString()].todos[cal_man.todo_creation.UID.toStdString()].due_to = cal_man.todo_creation.due_to;
+        cal_man.calendars[cal_man.selected_cal_name.toStdString()].todos[cal_man.todo_creation.UID.toStdString()].summary = cal_man.todo_creation.summary;
+        cal_man.calendars[cal_man.selected_cal_name.toStdString()].todos[cal_man.todo_creation.UID.toStdString()].completed = cal_man.todo_creation.completed;
+        ui->success_TODO_edit->show();
+        ui->progress_TODO_edit->hide();
+        ui->error_TODO_edit->hide();
+
+    }
+    else {
+        qDebug() << "[Failure]" << reply->errorString();
+        ui->success_TODO_edit->hide();
+        ui->progress_TODO_edit->hide();
+        ui->error_TODO_edit->show();
+        delete reply;
+    }
+}
+
 
 /*
  * ******* CALENDAR *********
@@ -965,7 +1061,33 @@ void MainWindow::create_calendar(std::string usr, std::string pwd, std::string c
 
 }
 
+void MainWindow::createCalendar_slot(QNetworkReply* reply) {
+    if (reply->error() == QNetworkReply::NoError) {
+        qDebug() << "[Created]";
+        QString strReply = (QString)reply->readAll();
+        if(ui->create_cal_type->currentText() != "Calendar") {
+            createTODO(ui->username_login->text(), ui->create_cal_name->toPlainText(), "Your first task", QDateTime::currentDateTime());
+        }
+        getAllEvents(ui->username_login->text(), ui->password_login->text(), ui->create_cal_name->toPlainText());
+
+        ui->create_cal_progress->hide();
+        ui->create_cal_error->hide();
+        ui->create_cal_success->show();
+    }
+    else {
+        qDebug() << "[Failure]" << reply -> errorString();
+        delete reply;
+
+        ui->create_cal_progress->hide();
+        ui->create_cal_error->show();
+        ui->create_cal_success->hide();
+    }
+}
+
 void MainWindow::delete_calendar(std::string usr, std::string pwd, std::string calendar_name) {
+
+    ui->delete_calendar_progress->show();
+    ui->delete_calendar_error->hide();
 
     QString _usr = QString::fromStdString(usr);
     QString _pwd = QString::fromStdString(pwd);
@@ -995,6 +1117,36 @@ void MainWindow::delete_calendar(std::string usr, std::string pwd, std::string c
     qDebug() << "[Delete calendar] " << reply;
 
 
+}
+
+void MainWindow::deleteCalendar_slot(QNetworkReply* reply) {
+    if (reply->error() == QNetworkReply::NoError) {
+
+        ui->delete_calendar_progress->hide();
+        ui->delete_calendar_error->hide();
+
+        qDebug() << "[Deleting calendar]";
+        QString strReply = (QString)reply->readAll();
+        delete ui->cal_list->currentItem();
+
+        if (cal_man.selected_cal.is_todo) {
+            ui->vtodo_list->removeItem(ui->vtodo_list->findText(QString::fromStdString(cal_man.selected_cal.name), Qt::MatchExactly));
+            refresh_todos();
+            clear_selected_todo(cal_man.selected_cal.name);
+        } else {
+
+            ui->vevent_list->removeItem(ui->vevent_list->findText(QString::fromStdString(cal_man.selected_cal.name), Qt::MatchExactly));
+        }
+
+        ui->delete_calendar_btn->setEnabled(false);
+        cal_man.calendars.erase(cal_man.selected_cal.name);
+    }
+    else {
+        ui->delete_calendar_progress->hide();
+        ui->delete_calendar_error->show();
+        qDebug() << "[Failure]" << reply -> errorString();
+        delete reply;
+    }
 }
 
 void MainWindow::share_calendar(std::string usr, std::string pwd, std::string calendar_name, std::string mail) {
@@ -1029,13 +1181,32 @@ void MainWindow::share_calendar(std::string usr, std::string pwd, std::string ca
                                                                                                                "        </D:share-access>\n"
                                                                                                                "    </D:sharee>\n"
                                                                                                                "</D:share-resource>";
-
     QByteArray request_share;
     request_share.append(req_share);
 
-    QNetworkReply *reply = manager->sendCustomRequest(request,"POST", request_share);
+    QNetworkReply *reply = manager->sendCustomRequest(request, "POST", request_share);
     QString response = reply->readAll();
-    qDebug() << "[Sharing calendar] " << reply;
+    qDebug() << "[Share calendar] " << reply;
+
+}
+
+void MainWindow::shareCalendar_slot(QNetworkReply* reply) {
+    if (reply->error() == QNetworkReply::NoError) {
+        qDebug() << "[Shared calendar]";
+        QString strReply = (QString)reply->readAll();
+    }
+    else {
+        qDebug() << "[Failure]" << reply -> errorString();
+        delete reply;
+    }
+}
+
+bool MainWindow::is_email_valid(std::string email)
+{
+   const std::regex pattern
+      ("(\\w+)(\\.|_)?(\\w*)@(\\w+)(\\.(\\w+))+");
+   bool result = std::regex_match(email, pattern);
+   return result;
 }
 
 /*
@@ -1266,12 +1437,12 @@ void MainWindow::on_createEventButton_clicked() {
     }
     
     if (summary.isEmpty() || startDateTime > endDateTime || cal_name.isEmpty()) {
-        ui -> success_create_event -> hide();
+        ui -> progress_create_event -> hide();
         ui -> error_create_event -> show();
     } else {
-        createEvent(user, cal_name, summary, startDateTime, endDateTime);
-        ui -> success_create_event -> show();
+        ui -> progress_create_event -> show();
         ui -> error_create_event -> hide();
+        createEvent(user, cal_name, summary, startDateTime, endDateTime);
     }
     
 }
@@ -1293,9 +1464,11 @@ void MainWindow::on_createTodoButton_clicked()
     
     if(summary.isEmpty() || cal_name.isEmpty()) {
         ui->error_TODO_create->show();
+        ui->progress_TODO_create->hide();
     } else {
         createTODO(user, cal_name, summary, dueDate);
         ui->error_TODO_create->hide();
+        ui->progress_TODO_create->show();
     }
     
 }
@@ -1326,6 +1499,7 @@ void MainWindow::on_confirmEditButton_clicked()
         // If no event is selected, show error message
         ui->errorEdit->show();
         ui->successEdit->hide();
+        ui->progressEdit->hide();
         return;
     }
     
@@ -1357,12 +1531,14 @@ void MainWindow::on_confirmEditButton_clicked()
     
     if (summary.isEmpty() || start_date_time > end_date_time) {
         ui -> successEdit -> hide();
+        ui -> progressEdit -> hide();
         ui -> errorEdit -> show();
     } else {
         editEvent(user, uid, cal_name, summary, start_date_time, end_date_time);
         showEventsOnDate(ui->displayedCalendar->selectedDate());
-        ui -> successEdit -> show();
+        ui -> progressEdit -> show();
         ui -> errorEdit -> hide();
+        ui -> successEdit -> hide();
     }
     
 }
@@ -1396,6 +1572,7 @@ void MainWindow::on_confirmDelete_clicked()
 
         ui->errorDelete->show();
         ui->successDelete->hide();
+        ui->progressDelete->hide();
         return;
     }
     
@@ -1426,8 +1603,9 @@ void MainWindow::on_confirmDelete_clicked()
     
     deleteEvent(user, password, cal_name, uid);
     showEventsOnDate(ui->displayedCalendar->selectedDate());
-    ui -> successDelete -> show();
+    ui -> successDelete -> hide();
     ui -> errorDelete -> hide();
+    ui -> progressDelete -> show();
     
 }
 
@@ -1472,13 +1650,12 @@ void MainWindow::on_TODO_list_itemClicked(QTreeWidgetItem *item, int column)
 
 void MainWindow::on_deleteTodoButton_clicked()
 {
-    
-    deleteEvent(ui->username_login->text(), ui->username_login->text(), cal_man.selected_cal_name, cal_man.selected_todo.UID);
-    cal_man.calendars[cal_man.selected_cal_name.toStdString()].todos.erase(cal_man.selected_todo.UID.toStdString());
+    ui->progress_TODO_create->show();
     ui->editTodoButton->setEnabled(false);
     ui->deleteTodoButton->setEnabled(false);
-    delete ui->TODO_list->currentItem();
-    
+    deleteEvent(ui->username_login->text(), ui->username_login->text(), cal_man.selected_cal_name, cal_man.selected_todo.UID);
+    ui->progress_TODO_create->hide();
+    // cal_man.calendars[cal_man.selected_cal_name.toStdString()].todos.erase(cal_man.selected_todo.UID.toStdString());
 }
 
 void MainWindow::on_editTodoButton_clicked()
@@ -1490,6 +1667,9 @@ void MainWindow::on_editTodoButton_clicked()
 void MainWindow::on_backTODOedit_clicked()
 {
     ui->stackedWidget->setCurrentIndex(1);
+    ui->success_TODO_edit->hide();
+    ui->progress_TODO_edit->hide();
+    ui->error_TODO_edit->hide();
 }
 
 void MainWindow::on_backSAVEedit_clicked()
@@ -1510,6 +1690,7 @@ void MainWindow::on_backSAVEedit_clicked()
     if(myTitle.isEmpty() || cal_name.isEmpty()) {
         ui->error_TODO_edit->show();
         ui->success_TODO_edit->hide();
+        ui->progress_TODO_edit->hide();
     } else {
         editTODO(ui->username_login->text(), cal_name, ui->textTODOedit->toPlainText(),
                  ui->dateTODOedit->dateTime(), cal_man.selected_todo.UID, ui->checkCompleted->isChecked());
@@ -1530,8 +1711,9 @@ void MainWindow::on_backSAVEedit_clicked()
         }
         ui->TODO_list->addTopLevelItem(newItem);
         
-        ui->success_TODO_edit->show();
+        ui->progress_TODO_edit->show();
         ui->error_TODO_edit->hide();
+        ui->success_TODO_edit->hide();
         
     }
     
@@ -1548,20 +1730,23 @@ void MainWindow::on_create_cal_goback_clicked()
     ui->stackedWidget->setCurrentIndex(1);
     ui->create_cal_success->hide();
     ui->create_cal_error->hide();
+    ui->create_cal_progress->hide();
 }
 
 void MainWindow::on_create_cal_go_clicked()
 {
     QString myTitle = ui->create_cal_name->toPlainText();
-    if(myTitle.isEmpty()) {
+    if(myTitle.isEmpty() || myTitle.contains(" ")) {
         ui->create_cal_error->show();
         ui->create_cal_success->hide();
+        ui->create_cal_progress->hide();
     } else {
         
         cal_man.is_new = true;
         create_calendar(ui->username_login->text().toStdString(), ui->password_login->text().toStdString(), ui->create_cal_name->toPlainText().toStdString());
-        ui->create_cal_success->show();
+        ui->create_cal_success->hide();
         ui->create_cal_error->hide();
+        ui->create_cal_progress->show();
         
     }
     
@@ -1613,13 +1798,15 @@ void MainWindow::on_share_cal_go_clicked()
 {
     
     QString myTitle = ui->share_cal_name->toPlainText();
-    if(myTitle.isEmpty()) {
+    if(myTitle.isEmpty() || !is_email_valid(myTitle.toStdString())) {
+        ui->share_cal_progress->hide();
         ui->share_cal_error->show();
         ui->share_cal_success->hide();
     } else {
         share_calendar(ui->username_login->text().toStdString(), ui->password_login->text().toStdString(), cal_man.selected_cal.name, ui->share_cal_name->toPlainText().toStdString());
-        ui->share_cal_success->show();
+        ui->share_cal_progress->show();
         ui->share_cal_error->hide();
+        ui->share_cal_success->hide();
         
     }
 }

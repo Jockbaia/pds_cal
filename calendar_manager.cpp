@@ -15,4 +15,6 @@ CalendarManager::CalendarManager(const CalendarManager &other){
     selected_cal_name = other.selected_cal_name;
     is_new = other.is_new;
     is_logged = other.is_logged;
+    event_creation = other.event_creation;
+    todo_creation = other.todo_creation;
 }

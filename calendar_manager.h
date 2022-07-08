@@ -12,13 +12,26 @@ public:
     explicit CalendarManager(QObject *parent = nullptr);
     CalendarManager(const CalendarManager& other);
 
+    // AUTH
+
     QString user;
     QString password;
+
+    // Selectors
 
     std::map<std::string, Calendar> calendars;
     Todo selected_todo;
     Calendar selected_cal;
+
+    Event event_creation;
+    Todo todo_creation;
+
+    // GUI selection
+
     QString selected_cal_name;
+
+    // various flags
+
     bool is_new;
     bool is_logged;
 

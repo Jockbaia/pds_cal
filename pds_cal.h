@@ -36,25 +36,22 @@ private slots:
     // auth
 
     bool login(std::string usr, std::string pwd);
-    bool get_calendars(std::string usr, std::string pwd);
-
-    // qReplys
-
-    void do_authentication(QNetworkReply *, QAuthenticator *q);
     void login_slot(QNetworkReply* reply);
+    void do_authentication(QNetworkReply *, QAuthenticator *q);
+    bool get_calendars(std::string usr, std::string pwd);
     void getCalendars_slot(QNetworkReply* reply);
     void report_function(QNetworkReply* reply);
-    void report_getAllEvents(QNetworkReply* reply);
-    void createCalendar_slot(QNetworkReply* reply);
-    void deleteCalendar_slot(QNetworkReply* reply);
-    void shareCalendar_slot(QNetworkReply* reply);
 
     // events
 
     void getAllEvents(QString user, QString pass, QString calendar_name);
+    void report_getAllEvents(QNetworkReply* reply);
     void createEvent(QString user, QString calendar_name, QString summary, QDateTime start_date_time, QDateTime end_date_time);
+    void report_createEvent(QNetworkReply* reply);
     void editEvent(QString user, QString uid, QString calendar_name, QString summary, QDateTime start_date_time, QDateTime end_date_time);
+    void report_editEvent(QNetworkReply* reply);
     void deleteEvent(QString user, QString pass, QString calendar_name, QString uid);
+    void report_deleteEvent(QNetworkReply* reply);
 
     QList<Event> getEventsOnDate(QDate date);
     void showEventsOnDate(QDate date);
@@ -63,14 +60,21 @@ private slots:
     // todos
 
     void createTODO(QString user, QString calendar_name, QString summary, QDateTime end_date);
+    void report_createTODO(QNetworkReply* reply);
     void deleteTODO(QString user, QString pass, QString calendar_name, QString uid);
+    void report_deleteTODO(QNetworkReply* reply);
     void editTODO(QString user, QString calendar_name, QString summary, QDateTime new_due, QString uid, bool comp);
+    void report_editTODO(QNetworkReply* reply);
 
     // calendar
 
     void create_calendar(std::string usr, std::string pwd, std::string calendar_name);
+    void createCalendar_slot(QNetworkReply* reply);
     void delete_calendar(std::string usr, std::string pwd, std::string calendar_name);
+    void deleteCalendar_slot(QNetworkReply* reply);
     void share_calendar(std::string usr, std::string pwd, std::string calendar_name, std::string mail);
+    void shareCalendar_slot(QNetworkReply* reply);
+    bool is_email_valid(std::string email);
 
     // timer
 
